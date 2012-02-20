@@ -1,18 +1,16 @@
 var port = 3000,
   io = require('socket.io'),
   express = require('express'),
-  app = express.createServer(),
+  app = express.createServer( ),
   io = io.listen(app),
   arduino = require('duino'),
   board,
-  pins = [];
-// board = new arduino.Board( {
-//   debug: true
-// } );
+  pins = [],
+  board = new arduino.Board( );
 
 io.sockets.on( 'connection', function ( socket ) {
-  socket.on( 'message', function ( data ) {
-    console.log( 'got an answer: ' + JSON.stringify( data ));
+  socket.on( 'pin', function ( data ) {
+    switch_pin( data.pin );
   } );
 } );
 
@@ -20,24 +18,31 @@ var htmlWrapper = function ( req, res, next ) {
   var send = res.send;
   res.send = function ( foo ) {
     res.send = send;
-    res.send( '<html><head><style type="text/css">h1 { padding: 2em }</style><script src="/socket.io/socket.io.js"></script> <script> var socket = io.connect("http://localhost:' + port + '"); socket.on("message", function (data) { console.log("triggered event message"); console.log(data); socket.emit("message", data ); var msg = document.createElement("p"); msg.innerHTML = JSON.stringify( data ); document.getElementsByTagName("body")[0].appendChild( msg ); }); </script> </head> <body> <h1>Try <a href="/led/12">/led/12</a> or <a href="/led/13">/led/13</a>.</h1> <div id="msgs"></div>' + foo + '</body></html>' );
+    res.send( '<html><head><style type="text/css">p { padding: 2em } .on { background-color: #0f0 } </style></head><body> <p>Try <a id="pin12" data-pin="12" href="/pin/12">/pin/12</a> or <a id="pin13" data-pin="13" href="/pin/13">/pin/13</a>.</p> <div id="msgs"></div>' + foo + '<script src="http://code.jquery.com/jquery-1.5.min.js"></script><script src="/socket.io/socket.io.js"></script> \
+      <script> \
+        $( function ( ) { \
+          var socket = io.connect("http://localhost:' + port + '"); \
+          if ( socket ) { \
+            alert( socket ); \
+            socket.on( "message", function ( data ) { \
+              $("#msgs").prepend( "<p>" + JSON.stringify( data ) + "<\p>" ).find("p:gt(2)").remove( ); \
+            } ); \
+            socket.on( "pin", function ( data ) { \
+              data.bright ? $("#pin" + data.pin).addClass( "on" ) : $("#pin" + data.pin).removeClass( "on" ); \
+            } ); \
+            $("a").click( function ( ) { \
+              socket.emit( "pin", { pin: $(this).data("pin"), bright: ! $(this).data("bright") } ); \
+              return false; \
+            } ); \
+          } \
+        } ); \
+      </script></body></html>' );
   }
-  next();
+  next( );
 };
 app.use( htmlWrapper );
 
-var p = function ( ) {
-  var r = '';
-  for ( var i in arguments ) {
-    r += '<h1>' + arguments[i] + '</h1>';
-  }
-  return r;
-};
-
-
-app.get( '/led/:pin(\\d{1,2})?', function( req, res, next ) {
-  console.log( req.params );
-  var pin = req.params.pin;
+var switch_pin = function ( pin, bright ) {
   io.sockets.emit( 'message', 'Someone just switched pin ' + pin );
   if ( ! pins[ pin ] ) {
     try {
@@ -52,17 +57,23 @@ app.get( '/led/:pin(\\d{1,2})?', function( req, res, next ) {
     }
   }
   if ( pins[ pin ] ) {
-    console.log( pins[ pin ] );
+    console.log( 'switch pin ' + pin );
+    if ( bright === undefined ) bright = ! pins[ pin ].bright;
     pins[ pin ].bright ? pins[ pin ].off( ) : pins[ pin ].on( );
-    res.send( p( 'LED ' + pin + ' is ' + ( pins[ pin ].bright ? 'on' : 'off' )));
+    io.sockets.emit( "pin", { pin: pin, bright: pins[ pin ].bright } );
+    return 'LED ' + pin + ' is ' + ( pins[ pin ].bright ? 'on' : 'off' );
   }
   else {
-    res.send( p( 'No LED ' + pin ));
+    return 'No LED ' + pin;
   }
+};
+
+app.get( '/pin/:pin(\\d{1,2})?', function( req, res, next ) {
+  res.send( switch_pin( req.params.pin ));
 } );
 
 app.all( /(.*)/, function( req, res ) {
-  res.send( p( 'Custom 404 page, did not find ' + req.params[0] ));
+  res.send( '' );
 } );
 
 app.listen( port );
