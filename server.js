@@ -3,6 +3,7 @@
  * 
  * Requires http://nodejs.org/ and http://expressjs.com/ and https://github.com/ecto/duino 
  * 
+ * @todo    Templates
  * @author  PC <paul.clarke+paulclarke@holidayextras.com>
  * @date    Tue 21 Feb 2012 08:57:00 GMT
  */
@@ -14,20 +15,38 @@ var port = 3000,
   io = io.listen(app),
   arduino = require('duino'),
   board,
-  pins = [],
-  board = new arduino.Board( );
+  pins = { 11: null, 12: null, 13: null },
+  board = new arduino.Board( ),
+  list_of_pins = '<ul>';
+
+for ( var i in pins ) {
+  try {
+    pins[ i ] = new arduino.Led( {
+      board: board,
+      debug: true,
+      pin: i
+    } );
+    list_of_pins += '<li><a id="pin' + i + '" data-pin="' + i + '" href="/pin/' + i + '" data-bright="0">/pin/' + i + '</a></li>';
+  }
+  catch ( e ) { // probably no led plugged in
+    console.log( e );
+  }
+}
+list_of_pins += '</ul>';
 
 io.sockets.on( 'connection', function ( socket ) {
   socket.on( 'pin', function ( data ) {
-    switch_pin( data.pin );
+    if ( typeof data.bright != 'undefined' ) {
+      switch_pin( data.pin );
+    }
   } );
 } );
 
-var htmlWrapper = function ( req, res, next ) {
+app.use( function ( req, res, next ) {
   var send = res.send;
   res.send = function ( foo ) {
     res.send = send;
-    res.send( '<html><head><style type="text/css">p { padding: 2em } .on { background-color: #0f0 } </style></head><body> <p>Try <a id="pin12" data-pin="12" href="/pin/12">/pin/12</a> or <a id="pin13" data-pin="13" href="/pin/13">/pin/13</a>.</p> <div id="msgs"></div>' + foo + '<script src="http://code.jquery.com/jquery-1.5.min.js"></script><script src="/socket.io/socket.io.js"></script> \
+    res.send( '<html><head><style type="text/css">p, li { font-size: 2em, margin: 2em } .on { background-color: #0f0 } </style></head><body>' + list_of_pins + '<div id="msgs"></div>' + foo + '<script src="http://code.jquery.com/jquery-1.5.min.js"></script><script src="/socket.io/socket.io.js"></script> \
       <script> \
         $( function ( ) { \
           var socket = io.connect("http://localhost:' + port + '"); \
@@ -36,9 +55,13 @@ var htmlWrapper = function ( req, res, next ) {
               $("#msgs").prepend( "<p>" + JSON.stringify( data ) + "<\p>" ).find("p:gt(2)").remove( ); \
             } ); \
             socket.on( "pin", function ( data ) { \
-              data.bright ? $("#pin" + data.pin).addClass( "on" ) : $("#pin" + data.pin).removeClass( "on" ); \
+              var $pin = $("#pin" + data.pin).data( "bright", data.bright ); \
+              data.bright ? $pin.addClass( "on" ) : $pin.removeClass( "on" ); \
             } ); \
-            $("a").click( function ( ) { \
+            $("a").each( function ( ) { \
+              /* quick test, get each pin, see if it is on - I still need to update the pin data, hmm */ \
+              socket.emit( "pin", { pin: $(this).data("pin") } ); \
+            } ).click( function ( ) { \
               socket.emit( "pin", { pin: $(this).data("pin"), bright: ! $(this).data("bright") } ); \
               return false; \
             } ); \
@@ -47,37 +70,29 @@ var htmlWrapper = function ( req, res, next ) {
       </script></body></html>' );
   }
   next( );
-};
-app.use( htmlWrapper );
+} );
 
 var switch_pin = function ( pin, bright ) {
   io.sockets.emit( 'message', 'Someone just switched pin ' + pin );
-  if ( ! pins[ pin ] ) {
-    try {
-      pins[ pin ] = new arduino.Led( {
-        board: board,
-        debug: true,
-        pin: pin
-      } );
-    }
-    catch ( e ) {
-      console.log( e );
-    }
-  }
   if ( pins[ pin ] ) {
-    console.log( 'switch pin ' + pin );
     if ( bright === undefined ) bright = ! pins[ pin ].bright;
     pins[ pin ].bright ? pins[ pin ].off( ) : pins[ pin ].on( );
     io.sockets.emit( "pin", { pin: pin, bright: pins[ pin ].bright } );
-    return 'LED ' + pin + ' is ' + ( pins[ pin ].bright ? 'on' : 'off' );
+    return get_pin( pin );
   }
-  else {
-    return 'No LED ' + pin;
-  }
+  return false;
 };
 
-app.get( '/pin/:pin(\\d{1,2})?', function( req, res, next ) {
+var get_pin = function ( pin ) {
+  return pins[ pin ].bright;
+};
+
+app.post( '/pin/:pin(\\d{1,2})?', function( req, res, next ) {
   res.send( switch_pin( req.params.pin ));
+} );
+
+app.get( '/pin/:pin(\\d{1,2})?', function( req, res, next ) {
+  res.send( get_pin( req.params.pin ));
 } );
 
 app.all( /(.*)/, function( req, res ) {
