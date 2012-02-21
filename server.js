@@ -1,3 +1,12 @@
+/**
+ * Slightly messy arduino experiments using sockets.
+ * 
+ * Requires http://nodejs.org/ and http://expressjs.com/ and https://github.com/ecto/duino 
+ * 
+ * @author  PC <paul.clarke+paulclarke@holidayextras.com>
+ * @date    Tue 21 Feb 2012 08:57:00 GMT
+ */
+
 var port = 3000,
   io = require('socket.io'),
   express = require('express'),
@@ -23,7 +32,6 @@ var htmlWrapper = function ( req, res, next ) {
         $( function ( ) { \
           var socket = io.connect("http://localhost:' + port + '"); \
           if ( socket ) { \
-            alert( socket ); \
             socket.on( "message", function ( data ) { \
               $("#msgs").prepend( "<p>" + JSON.stringify( data ) + "<\p>" ).find("p:gt(2)").remove( ); \
             } ); \

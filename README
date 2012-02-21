@@ -1,3 +1,5 @@
 Robot house experiments. OK so far I'm just turning LEDs on and off.
 
 http://www.clarkeology.com/wiki/robot+house
+
+Requires http://nodejs.org/ and http://expressjs.com/ and https://github.com/ecto/duino 
