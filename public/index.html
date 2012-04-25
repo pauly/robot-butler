@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html><head>
+  <link rel="stylesheet" href="http://code.jquery.com/mobile/1.0.1/jquery.mobile-1.0.1.min.css" />
+  <script src="http://code.jquery.com/jquery-1.6.4.min.js"></script>
+  <script src="http://code.jquery.com/mobile/1.0.1/jquery.mobile-1.0.1.min.js"></script>
+  <meta name="viewport" content="width=device-width,user-scalable=no" />
+  <title>Robot House</title>
+</head>
+<body>
+  <div data-role="page">
+    <div data-role="header">
+      <h1>Robot House</h1>
+    </div>
+    <div data-role="content" class="content">
+      <p>Undecided as to what form this should take at the moment. I have been experimenting with node.js but I think I need a simple one page html5 app too. That's this.</p>
+      <p><a href="#page2">Let's go</a>...</p>
+    </div>
+    <div data-role="footer">
+      <h4>By <a href="http://www.clarkeology.com/blog/">Paul Clarke</a>.</h4>
+    </div>
+  </div>
+  <div data-role="page" id="page2" data-add-back-btn="true">
+    <div data-role="header">
+      <h1>Robot House</h1>
+    </div>
+    <div data-role="content" class="content">
+    </div>
+    <div data-role="footer">
+      <h4>By <a href="http://www.clarkeology.com/blog/">Paul Clarke</a>.</h4>
+    </div>
+  </div>
+  <script>
+    var default_device = {
+      name: 'Device 1',
+      address: 'http://192.168.1.1',
+      type: 'default',
+      value: 0
+    };
+    var default_room = {
+      name: 'Room 1',
+      device: [
+        default_device
+      ]
+    };
+    var default_config = {
+      version: 0.1,
+      room: [
+        default_room
+      ]
+    };
+    $( function ( ) {
+      var debug = function ( msg ) {
+        window.console && console.log( msg );
+        $('.content').append( '<pre>' + ( typeof( msg ) === 'string' ? msg : JSON.stringify( msg )) + '</pre>' );
+      };
+      var error = function ( msg ) {
+        debug( 'ERROR: ' + msg );
+      };
+      if ( typeof( localStorage ) == 'undefined' ) {
+        error( 'Doh, no html local storage!' );
+      }
+      else {
+        var config = localStorage.getItem( config ) || default_config;
+        debug( 'Your config is:' );
+        debug( config );
+        debug( 'Next step, show a form based on this config that you can edit...' );
+        try {
+          localStorage.setItem( 'config', config );
+        }
+        catch ( e ) {
+          if ( e == QUOTA_EXCEEDED_ERR ) {
+            error( 'Quota exceeded!' );
+          }
+        }
+      }
+    } );
+  </script>
+</body></html>

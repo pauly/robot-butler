@@ -4,5 +4,7 @@ http://www.clarkeology.com/wiki/robot+house
 
 Requires http://nodejs.org/ and http://expressjs.com/ and https://github.com/ecto/duino 
 
+Undecided what form this should take right now, so I'm mixing a front end web app (public/index.html) in with the node.js stuff.
+
 http://www.clarkeology.com/blog/
 
