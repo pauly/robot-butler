@@ -11,7 +11,7 @@
     <div data-role="header">
       <h1>Robot House</h1>
     </div>
-    <div data-role="content" class="content">
+    <div data-role="content">
       <p>Undecided as to what form this should take at the moment. I have been experimenting with node.js but I think I need a simple one page html5 app too. That's this.</p>
       <p><a href="#page2">Let's go</a>...</p>
     </div>
@@ -23,56 +23,151 @@
     <div data-role="header">
       <h1>Robot House</h1>
     </div>
-    <div data-role="content" class="content">
+    <div data-role="content">
+      <div data-role="collapsible" class="activity">
+        <h1>Activity</h1>
+        <p>Still to be completed, buttons will go here to turn stuff on and off...</p>
+      </div>
+      <div data-role="collapsible" class="content">
+        <h1>Config</h1>
+        <div class="ui-block-a"><a data-role="button" class="reset">reset</a></div>
+      </div>
     </div>
     <div data-role="footer">
       <h4>By <a href="http://www.clarkeology.com/blog/">Paul Clarke</a>.</h4>
     </div>
   </div>
   <script>
-    var default_device = {
-      name: 'Device 1',
-      address: 'http://192.168.1.1',
-      type: 'default',
-      value: 0
+    var default_device = function ( i ) {
+      return {
+        name: 'Device ' + i,
+        type: 'default',
+        protocol: 'http',
+        ip: '192.168.1.' + i,
+        pin: 13,
+        value: null 
+      };
     };
     var default_room = {
       name: 'Room 1',
       device: [
-        default_device
+        default_device( 1 )
       ]
     };
     var default_config = {
       version: 0.1,
+      date: new Date( ),
       room: [
         default_room
       ]
     };
     $( function ( ) {
+      var output = function ( msg ) {
+        $('.content').append( msg );
+      };
       var debug = function ( msg ) {
         window.console && console.log( msg );
-        $('.content').append( '<pre>' + ( typeof( msg ) === 'string' ? msg : JSON.stringify( msg )) + '</pre>' );
+        output( '<pre>' + ( typeof( msg ) === 'string' ? msg : JSON.stringify( msg )) + '</pre>' );
+      };
+      var form_to_obj = function ( ) {
+        var obj = { };
+        function add( obj, name, value ) {
+          var key = name.shift( );
+          // if ( key && key.match( /^\d+$/ )) {
+          //   key = parseInt( key );
+          // }
+          if ( name.length ) {
+            if ( obj[key] == null ) {
+              obj[key] = { };
+            }
+            add( obj[key], name, value );
+          }
+          else {
+            obj[key] = value;
+          }
+        }; 
+        $('input, textarea, select').each( function( ) {
+          add( obj, $(this).attr('name').split('.'), $(this).val( ));
+        } );
+        return obj;
       };
       var error = function ( msg ) {
         debug( 'ERROR: ' + msg );
       };
+      var make_input_name = function ( name, prefix ) {
+        var c = prefix.slice( 0 ); // take a copy
+        c.push( name );
+        return c.join('.').replace( /^\.+/, '' ).replace( /\.{2,}/g, '.' );
+      };
+      var input = function ( name, val, prefix ) {
+        var input_name = make_input_name( name, prefix );
+        switch ( name ) {
+          case 'date':
+          case 'version':
+            return '<input type="hidden" name="' + input_name + '" value="' + val + '" />';
+          default:
+            return '<div><label for="' + input_name + '">' + name + '</label><input id="' + input_name + '" name="' + input_name + '" value="' + val + '" /></div>';
+        }
+      };
+      var fieldset = function ( name, obj, prefix ) {
+        var r = '';
+        if ( typeof( obj ) === 'object' ) {
+          var parts = '';
+          prefix.push( name );
+          for ( var i in obj ) {
+            parts += fieldset( i, obj[i], prefix );
+          }
+          if ( parts ) {
+            console.log( 'parts.length was ' + parts.length );
+            if ( name ) {
+              parts = '<fieldset><legend>' + name + '</legend>' + parts + '</fieldset>';
+            }
+            r += parts;
+          }
+        }
+        else {
+          r += input( name, obj, prefix );
+        }
+        return r; 
+      };
+      var obj_to_form = function ( name, obj, prefix ) {
+        output( '<form>' + fieldset( name, obj, [ prefix ] ) + '</form>' );
+      };
+      var get_config = function ( ) {
+        var c = JSON.parse( localStorage.getItem( 'config' ));
+        return c.config || c || default_config;
+      };
+      var set_config = function ( config ) {
+        try {
+          config.date = new Date( );
+          localStorage.setItem( 'config', JSON.stringify( config ));
+          debug( 'saved config' );
+          debug( config );
+        }
+        catch ( e ) {
+          if ( e == QUOTA_EXCEEDED_ERR ) {
+            error( 'Doh, quota exceeded!' );
+          }
+        }
+      };
+      var config;
       if ( typeof( localStorage ) == 'undefined' ) {
         error( 'Doh, no html local storage!' );
       }
       else {
-        var config = localStorage.getItem( config ) || default_config;
-        debug( 'Your config is:' );
-        debug( config );
-        debug( 'Next step, show a form based on this config that you can edit...' );
-        try {
-          localStorage.setItem( 'config', config );
-        }
-        catch ( e ) {
-          if ( e == QUOTA_EXCEEDED_ERR ) {
-            error( 'Quota exceeded!' );
-          }
-        }
+        config = get_config( );
+        output( obj_to_form( '', config, 'config' ));
       }
+      $('input').change( function ( ) {
+        config = form_to_obj( );
+        set_config( config );
+      } );
+      $('.reset').click( function ( ) {
+        set_config( default_config );
+        $('.content').html( '' );
+        config = get_config( );
+        output( obj_to_form( '', config, 'config' ));
+      } );
     } );
   </script>
 </body></html>
