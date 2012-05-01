@@ -30,7 +30,8 @@
       </div>
       <div data-role="collapsible" class="content">
         <h1>Config</h1>
-        <div class="ui-block-a"><a data-role="button" class="reset">reset</a></div>
+        <p><a data-role="button" class="add_room">add a room</a></p>
+        <p><a data-role="button" class="reset">reset</a></p>
       </div>
     </div>
     <div data-role="footer">
@@ -74,7 +75,7 @@
         function add( obj, name, value ) {
           var key = name.shift( );
           // if ( key && key.match( /^\d+$/ )) {
-          //   key = parseInt( key );
+          //  key = parseInt( key );
           // }
           if ( name.length ) {
             if ( obj[key] == null ) {
@@ -118,7 +119,6 @@
             parts += fieldset( i, obj[i], prefix );
           }
           if ( parts ) {
-            console.log( 'parts.length was ' + parts.length );
             if ( name ) {
               parts = '<fieldset><legend>' + name + '</legend>' + parts + '</fieldset>';
             }
@@ -160,6 +160,14 @@
       }
       $('input').change( function ( ) {
         config = form_to_obj( );
+        set_config( config );
+      } );
+      $('.add_room').click( function ( ) {
+        // config.room[2] = default_room;
+        debug( 'todo: add a new room!' );
+        debug( config );
+        $('.content').html( '' );
+        output( obj_to_form( '', config, 'config' ));
         set_config( config );
       } );
       $('.reset').click( function ( ) {
