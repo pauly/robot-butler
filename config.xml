@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <widget xmlns="http://www.w3.org/ns/widgets" xmlns:gap="http://phonegap.com/ns/1.0" id="com.clarkeology.robot-house" version="0.0.1">
   <name>Robot House</name>
-  <description>Hme automation fun</description>
+  <description>Home automation fun</description>
   <author href="http://www.clarkeology.com/blog/" email="pauly@clarkeology.com">Paul Clarke</author>
   <icon src="res/drawable-ldpi/ic_launcher.png" width="36" height="36" />
   <icon src="res/drawable-mdpi/ic_launcher.png" width="48" height="48" />
