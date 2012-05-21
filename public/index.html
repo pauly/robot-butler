@@ -141,7 +141,8 @@
       };
       var get_config = function ( ) {
         var c = JSON.parse( localStorage.getItem( 'config' ));
-        return c.config || c || default_config;
+        if ( c && c.config ) return c.config;
+        return c || default_config;
       };
       var set_config = function ( config ) {
         try {
@@ -162,14 +163,17 @@
       }
       else {
         config = get_config( );
+        // make config form
+        output( obj_to_form( '', config, 'config' ));
         // make activity forms
         $('.activity').html('');
-        $.each( config.room, function ( ) {
+        debug( config );
+        config.room && $.each( config.room, function ( ) {
           var room = this.name;
           $.each( this.device, function ( ) {
             var $form = $('<form />')
               .append('<legend>' + room + ' ' + this.name + '</legend>')
-              .attr( 'action', this.protocol + '://' + this.ip + '/' + this.pin );
+              .attr( 'action', ( this.protocol || 'http' ) + '://' + this.ip + '/' + this.pin );
             var $select = $('<select><option value="0">off</option><option value="1"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
             $form.append( $select );
             $select.slider( );
@@ -183,8 +187,6 @@
             $('.activity').append( $form );
           } );
         } );
-        // make config form
-        output( obj_to_form( '', config, 'config' ));
       }
       $('input').change( function ( ) {
         config = form_to_obj( );
