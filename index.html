@@ -24,12 +24,16 @@
       <h1>Robot House</h1>
     </div>
     <div data-role="content">
-      <div data-role="collapsible" class="activity">
+      <div data-role="collapsible">
         <h1>Activity</h1>
-        <p>Still to be completed, buttons will go here to turn stuff on and off...</p>
+        <div class="activity">
+          <p>Still to be completed, buttons will go here to turn stuff on and off...</p>
+        </div>
       </div>
-      <div data-role="collapsible" class="content">
+      <div data-role="collapsible">
         <h1>Config</h1>
+        <div class="config">
+        </div>
         <p><a data-role="button" class="add_room">add a room</a></p>
         <p><a data-role="button" class="reset">reset</a></p>
       </div>
@@ -42,29 +46,31 @@
     var default_device = function ( i ) {
       return {
         name: 'Device ' + i,
-        type: 'default',
-        protocol: 'http',
-        ip: '192.168.1.' + i,
+        // type: 'default',
+        // protocol: 'http',
+        ip: '192.168.0.' + ( 100 + i ),
         pin: 13,
         value: null 
       };
     };
-    var default_room = {
-      name: 'Room 1',
-      device: [
-        default_device( 1 )
-      ]
+    var default_room = function ( i ) {
+      return {
+        name: 'Room ' + i,
+        device: [
+          default_device( 1 )
+        ]
+      };
     };
     var default_config = {
       version: 0.1,
       date: new Date( ),
       room: [
-        default_room
+        default_room( 1 )
       ]
     };
-    $( function ( ) {
+    $('#page2').bind( 'pageinit', function ( ) {
       var output = function ( msg ) {
-        $('.content').append( msg );
+        $('.config').append( msg );
       };
       var debug = function ( msg ) {
         window.console && console.log( msg );
@@ -87,7 +93,7 @@
             obj[key] = value;
           }
         }; 
-        $('input, textarea, select').each( function( ) {
+        $('.config').find('input, textarea, select').each( function( ) {
           add( obj, $(this).attr('name').split('.'), $(this).val( ));
         } );
         return obj;
@@ -156,6 +162,28 @@
       }
       else {
         config = get_config( );
+        // make activity forms
+        $('.activity').html('');
+        $.each( config.room, function ( ) {
+          var room = this.name;
+          $.each( this.device, function ( ) {
+            var $form = $('<form />')
+              .append('<legend>' + room + ' ' + this.name + '</legend>')
+              .attr( 'action', this.protocol + '://' + this.ip + '/' + this.pin );
+            var $select = $('<select><option value="0">off</option><option value="1"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
+            $form.append( $select );
+            $select.slider( );
+            $select.change( function ( ) {
+              debug( 'POST ' + $select.parent('form').attr('action') + '/' + $select.val( ));
+              $.post( $select.parent('form').attr('action') + '/' + $select.val( ), function ( js ) {
+                debug( js );
+              } );
+            } );
+            $form.find('select').slider( );
+            $('.activity').append( $form );
+          } );
+        } );
+        // make config form
         output( obj_to_form( '', config, 'config' ));
       }
       $('input').change( function ( ) {
@@ -163,7 +191,6 @@
         set_config( config );
       } );
       $('.add_room').click( function ( ) {
-        // config.room[2] = default_room;
         debug( 'todo: add a new room!' );
         debug( config );
         $('.content').html( '' );
