@@ -12,14 +12,15 @@
       <h1>Robot House</h1>
     </div>
     <div data-role="content">
-      <p>Undecided as to what form this should take at the moment. I have been experimenting with node.js but I think I need a simple one page html5 app too. That's this.</p>
+      <p>This is my html5 based robot butler app.</p>
+      <p><a href="#page2"><img src="res/drawable-xhdpi/ic_launcher.png" width="96" height="96" alt="robot butler" /></a></p>
       <p><a href="#page2">Let's go</a>...</p>
     </div>
     <div data-role="footer">
       <h4>By <a href="http://www.clarkeology.com/blog/">Paul Clarke</a>.</h4>
     </div>
   </div>
-  <div data-role="page" id="page2" data-add-back-btn="true">
+  <div data-role="page" id="page2">
     <div data-role="header">
       <h1>Robot House</h1>
     </div>
@@ -46,7 +47,7 @@
     var default_device = function ( i ) {
       return {
         name: 'Device ' + i,
-        // type: 'default',
+        type: 'button',
         // protocol: 'http',
         ip: '192.168.0.' + ( 100 + i ),
         pin: 13,
@@ -57,7 +58,7 @@
       return {
         name: 'Room ' + i,
         device: [
-          default_device( 1 )
+          default_device( i )
         ]
       };
     };
@@ -69,6 +70,14 @@
       ]
     };
     $('#page2').bind( 'pageinit', function ( ) {
+      var size = function( obj ) {
+        // if ( obj.length ) return obj.length;
+        var len = 0, key;
+        for ( key in obj ) {
+          if ( obj.hasOwnProperty( key )) len ++;
+        }
+        return len;
+      };
       var output = function ( msg ) {
         $('.config').append( msg );
       };
@@ -112,6 +121,8 @@
           case 'date':
           case 'version':
             return '<input type="hidden" name="' + input_name + '" value="' + val + '" />';
+          case 'type':
+            return '<div><label for="' + input_name + '">' + name + '</label><select id="' + input_name + '" name="' + input_name + '"><option value="button">button<option><option value="switch"' + ( val === 'switch' ? 'selected="selected"' : '' ) + '>switch</option></select></div>';
           default:
             return '<div><label for="' + input_name + '">' + name + '</label><input id="' + input_name + '" name="' + input_name + '" value="' + val + '" /></div>';
         }
@@ -148,14 +159,48 @@
         try {
           config.date = new Date( );
           localStorage.setItem( 'config', JSON.stringify( config ));
-          debug( 'saved config' );
-          debug( config );
+          // debug( 'saved config' );
+          // debug( config );
         }
         catch ( e ) {
-          if ( e == QUOTA_EXCEEDED_ERR ) {
-            error( 'Doh, quota exceeded!' );
-          }
+          error( e );
         }
+      };
+      var activity_form = function ( config ) {
+        $('.activity').html('');
+        config.room && $.each( config.room, function ( ) {
+          var room = this.name;
+          this.device && $.each( this.device, function ( ) {
+            var $form = $('<form />')
+              .append('<legend>' + room + ' ' + this.name + '</legend>')
+              .attr( 'action', ( this.protocol || 'http' ) + '://' + this.ip + '/' + this.pin );
+            switch ( this.type ) {
+              case 'button':
+                var $button = $('<button>' + this.name + '</button>');
+                $form.append( $button );
+                $button.button( );
+                $button.click( function ( ) {
+                  debug( 'POST ' + $button.parents('form').attr('action'));
+                  $.post( $button.parents('form').attr('action'), function ( js ) {
+                    debug( js );
+                  } );
+                } );
+                break;
+              default:
+                var $select = $('<select><option value="0">off</option><option value="1"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
+                $form.append( $select );
+                $select.slider( );
+                $select.change( function ( ) {
+                  debug( 'POST ' + $select.parents('form').attr('action') + '/' + $select.val( ));
+                  $.post( $select.parents('form').attr('action') + '/' + $select.val( ), function ( js ) {
+                    debug( js );
+                  } );
+                } );
+            }
+            $form.find('select').slider( );
+            $('.activity').append( $form );
+          } );
+        } );
       };
       var config;
       if ( typeof( localStorage ) == 'undefined' ) {
@@ -166,44 +211,26 @@
         // make config form
         output( obj_to_form( '', config, 'config' ));
         // make activity forms
-        $('.activity').html('');
-        debug( config );
-        config.room && $.each( config.room, function ( ) {
-          var room = this.name;
-          $.each( this.device, function ( ) {
-            var $form = $('<form />')
-              .append('<legend>' + room + ' ' + this.name + '</legend>')
-              .attr( 'action', ( this.protocol || 'http' ) + '://' + this.ip + '/' + this.pin );
-            var $select = $('<select><option value="0">off</option><option value="1"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
-            $form.append( $select );
-            $select.slider( );
-            $select.change( function ( ) {
-              debug( 'POST ' + $select.parent('form').attr('action') + '/' + $select.val( ));
-              $.post( $select.parent('form').attr('action') + '/' + $select.val( ), function ( js ) {
-                debug( js );
-              } );
-            } );
-            $form.find('select').slider( );
-            $('.activity').append( $form );
-          } );
-        } );
+        activity_form( config );
       }
       $('input').change( function ( ) {
         config = form_to_obj( );
         set_config( config );
       } );
       $('.add_room').click( function ( ) {
-        debug( 'todo: add a new room!' );
-        debug( config );
+        var r = size( config.room );
+        config.room[ r ] = default_room( 1 + r );
+        set_config( config );
         $('.content').html( '' );
         output( obj_to_form( '', config, 'config' ));
-        set_config( config );
+        activity_form( config );
       } );
       $('.reset').click( function ( ) {
         set_config( default_config );
         $('.content').html( '' );
         config = get_config( );
         output( obj_to_form( '', config, 'config' ));
+        activity_form( config );
       } );
     } );
   </script>
