@@ -12,7 +12,7 @@
       <h1>Robot House</h1>
     </div>
     <div data-role="content">
-      <p>This is my html5 based robot butler app.</p>
+      <p>This is my html5 based robot butler app, turn the lights on and off and so on.</p>
       <p><a href="#page2"><img src="res/drawable-xhdpi/ic_launcher.png" width="96" height="96" alt="robot butler" /></a></p>
       <p><a href="#page2">Let's go</a>...</p>
     </div>
@@ -28,7 +28,7 @@
       <div data-role="collapsible">
         <h1>Activity</h1>
         <div class="activity">
-          <p>Still to be completed, buttons will go here to turn stuff on and off...</p>
+          <p>Buttons will go here to turn devices on and off...</p>
         </div>
       </div>
       <div data-role="collapsible">
@@ -71,19 +71,19 @@
     };
     $('#page2').bind( 'pageinit', function ( ) {
       var size = function( obj ) {
-        // if ( obj.length ) return obj.length;
+        if ( obj.length ) return obj.length;
         var len = 0, key;
         for ( key in obj ) {
           if ( obj.hasOwnProperty( key )) len ++;
         }
         return len;
       };
-      var output = function ( msg ) {
-        $('.config').append( msg );
+      var output = function ( msg, c ) {
+        $( c || '.config' ).append( msg );
       };
-      var debug = function ( msg ) {
+      var debug = function ( msg, c ) {
         window.console && console.log( msg );
-        output( '<pre>' + ( typeof( msg ) === 'string' ? msg : JSON.stringify( msg )) + '</pre>' );
+        output( '<pre>' + ( typeof( msg ) === 'string' ? msg : JSON.stringify( msg )) + '</pre>', c );
       };
       var form_to_obj = function ( ) {
         var obj = { };
@@ -182,8 +182,10 @@
                 $button.click( function ( ) {
                   debug( 'POST ' + $button.parents('form').attr('action'));
                   $.post( $button.parents('form').attr('action'), function ( js ) {
-                    debug( js );
+                    debug( 'receieved: ' + JSON.stringify( js ), '.activity' );
+                    js && js.r && js.r.msg && alert( js.r.msg );
                   } );
+                  return false;
                 } );
                 break;
               default:
@@ -193,7 +195,8 @@
                 $select.change( function ( ) {
                   debug( 'POST ' + $select.parents('form').attr('action') + '/' + $select.val( ));
                   $.post( $select.parents('form').attr('action') + '/' + $select.val( ), function ( js ) {
-                    debug( js );
+                    debug( 'receieved: ' + JSON.stringify( js ), '.activity' );
+                    js && js.r && js.r.msg && alert( js.r.msg );
                   } );
                 } );
             }
