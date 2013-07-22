@@ -4,12 +4,12 @@
   <script src="http://code.jquery.com/jquery-1.6.4.min.js"></script>
   <script src="http://code.jquery.com/mobile/1.0.1/jquery.mobile-1.0.1.min.js"></script>
   <meta name="viewport" content="width=device-width,user-scalable=no" />
-  <title>Robot House</title>
+  <title>Robot Butler</title>
 </head>
 <body>
   <div data-role="page">
     <div data-role="header">
-      <h1>Robot House</h1>
+      <h1>Robot Butler</h1>
     </div>
     <div data-role="content">
       <p>This is my html5 based robot butler app, turn the lights on and off and so on.</p>
@@ -22,7 +22,7 @@
   </div>
   <div data-role="page" id="page2">
     <div data-role="header">
-      <h1>Robot House</h1>
+      <h1>Robot Butler</h1>
     </div>
     <div data-role="content">
       <div data-role="collapsible">
@@ -33,10 +33,9 @@
       </div>
       <div data-role="collapsible">
         <h1>Config</h1>
-        <div class="config">
-        </div>
-        <p><a data-role="button" class="add_room">add a room</a></p>
-        <p><a data-role="button" class="reset">reset</a></p>
+        <div class="config"></div>
+        <!-- <p><a data-role="button" class="add_room">add a room</a></p>
+        <p><a data-role="button" class="reset">reset</a></p> -->
       </div>
     </div>
     <div data-role="footer">
@@ -44,197 +43,192 @@
     </div>
   </div>
   <script>
-    var default_device = function ( i ) {
-      return {
-        name: 'Device ' + i,
-        type: 'button',
-        // protocol: 'http',
-        ip: '192.168.0.' + ( 100 + i ),
-        pin: 13,
-        value: null 
-      };
+    var defaultDevice = function ( i ) {
+      return 'Device ' + i;
     };
-    var default_room = function ( i ) {
+    var defaultRoom = function ( i ) {
       return {
         name: 'Room ' + i,
         device: [
-          default_device( i )
+          defaultDevice( 1 )
         ]
       };
     };
-    var default_config = {
+    var defaultConfig = {
+      url: 'http://ourduino.no-ip.org/config',
       version: 0.1,
       date: new Date( ),
       room: [
-        default_room( 1 )
+        defaultRoom( 1 )
       ]
     };
-    $('#page2').bind( 'pageinit', function ( ) {
-      var size = function( obj ) {
-        if ( obj.length ) return obj.length;
-        var len = 0, key;
-        for ( key in obj ) {
-          if ( obj.hasOwnProperty( key )) len ++;
-        }
-        return len;
-      };
-      var output = function ( msg, c ) {
-        $( c || '.config' ).append( msg );
-      };
-      var debug = function ( msg, c ) {
-        window.console && console.log( msg );
-        output( '<pre>' + ( typeof( msg ) === 'string' ? msg : JSON.stringify( msg )) + '</pre>', c );
-      };
-      var form_to_obj = function ( ) {
-        var obj = { };
-        function add( obj, name, value ) {
-          var key = name.shift( );
-          // if ( key && key.match( /^\d+$/ )) {
-          //  key = parseInt( key );
-          // }
-          if ( name.length ) {
-            if ( obj[key] == null ) {
-              obj[key] = { };
-            }
-            add( obj[key], name, value );
-          }
-          else {
-            obj[key] = value;
-          }
-        }; 
-        $('.config').find('input, textarea, select').each( function( ) {
-          add( obj, $(this).attr('name').split('.'), $(this).val( ));
+    var config = defaultConfig;
+    var debug = function ( msg, c ) {
+      window.console && console.log( msg );
+      output( '<pre>' + ( typeof( msg ) === 'string' ? msg : JSON.stringify( msg )) + '</pre>', c );
+    };
+    var error = function ( msg ) {
+      debug( 'ERROR: ' + msg );
+    };
+    var output = function ( msg, c ) {
+      $( c || '.config' ).append( msg );
+    };
+    var getConfig = function ( callback ) {
+      var c;
+      try {
+        c = JSON.parse( localStorage.getItem( 'config' ));
+}
+catch ( e ) {
+}
+      if ( c && c.config ) debug( 'stored config is', c.config );
+      if ( config && config.url ) {
+	alert( 'getting ' + config.url );
+        $.get( config.url, function ( data ) {
+	  alert( 'got ' + config.url );
+          debug( 'config from ' + config.url + ' was ' + JSON.stringify( data ));
+          callback( data || config );
         } );
-        return obj;
-      };
-      var error = function ( msg ) {
-        debug( 'ERROR: ' + msg );
-      };
-      var make_input_name = function ( name, prefix ) {
-        var c = prefix.slice( 0 ); // take a copy
-        c.push( name );
-        return c.join('.').replace( /^\.+/, '' ).replace( /\.{2,}/g, '.' );
-      };
-      var input = function ( name, val, prefix ) {
-        var input_name = make_input_name( name, prefix );
-        switch ( name ) {
-          case 'date':
-          case 'version':
-            return '<input type="hidden" name="' + input_name + '" value="' + val + '" />';
-          case 'type':
-            return '<div><label for="' + input_name + '">' + name + '</label><select id="' + input_name + '" name="' + input_name + '"><option value="button">button<option><option value="switch"' + ( val === 'switch' ? 'selected="selected"' : '' ) + '>switch</option></select></div>';
-          default:
-            return '<div><label for="' + input_name + '">' + name + '</label><input id="' + input_name + '" name="' + input_name + '" value="' + val + '" /></div>';
-        }
-      };
-      var fieldset = function ( name, obj, prefix ) {
-        var r = '';
-        if ( typeof( obj ) === 'object' ) {
-          var parts = '';
-          prefix.push( name );
-          for ( var i in obj ) {
-            parts += fieldset( i, obj[i], prefix );
-          }
-          if ( parts ) {
-            if ( name ) {
-              parts = '<fieldset><legend>' + name + '</legend>' + parts + '</fieldset>';
-            }
-            r += parts;
-          }
-        }
-        else {
-          r += input( name, obj, prefix );
-        }
-        return r; 
-      };
-      var obj_to_form = function ( name, obj, prefix ) {
-        output( '<form>' + fieldset( name, obj, [ prefix ] ) + '</form>' );
-      };
-      var get_config = function ( ) {
-        var c = JSON.parse( localStorage.getItem( 'config' ));
-        if ( c && c.config ) return c.config;
-        return c || default_config;
-      };
-      var set_config = function ( config ) {
-        try {
-          config.date = new Date( );
-          localStorage.setItem( 'config', JSON.stringify( config ));
-          // debug( 'saved config' );
-          // debug( config );
-        }
-        catch ( e ) {
-          error( e );
-        }
-      };
-      var activity_form = function ( config ) {
-        $('.activity').html('');
-        config.room && $.each( config.room, function ( ) {
-          var room = this.name;
-          this.device && $.each( this.device, function ( ) {
-            var $form = $('<form />')
-              .append('<legend>' + room + ' ' + this.name + '</legend>')
-              .attr( 'action', ( this.protocol || 'http' ) + '://' + this.ip + '/' + this.pin );
-            switch ( this.type ) {
-              case 'button':
-                var $button = $('<button>' + this.name + '</button>');
-                $form.append( $button );
-                $button.button( );
-                $button.click( function ( ) {
-                  debug( 'POST ' + $button.parents('form').attr('action'));
-                  $.post( $button.parents('form').attr('action'), function ( js ) {
-                    debug( 'receieved: ' + JSON.stringify( js ), '.activity' );
-                    js && js.r && js.r.msg && alert( js.r.msg );
-                  } );
-                  return false;
-                } );
-                break;
-              default:
-                var $select = $('<select><option value="0">off</option><option value="1"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
-                $form.append( $select );
-                $select.slider( );
-                $select.change( function ( ) {
-                  debug( 'POST ' + $select.parents('form').attr('action') + '/' + $select.val( ));
-                  $.post( $select.parents('form').attr('action') + '/' + $select.val( ), function ( js ) {
-                    debug( 'receieved: ' + JSON.stringify( js ), '.activity' );
-                    js && js.r && js.r.msg && alert( js.r.msg );
-                  } );
-                } );
-            }
-            $form.find('select').slider( );
-            $('.activity').append( $form );
-          } );
-        } );
-      };
-      var config;
-      if ( typeof( localStorage ) == 'undefined' ) {
-        error( 'Doh, no html local storage!' );
+	alert( 'called get' );
       }
       else {
-        config = get_config( );
-        // make config form
-        output( obj_to_form( '', config, 'config' ));
-        // make activity forms
-        activity_form( config );
+        callback( c.config || config );
       }
-      $('input').change( function ( ) {
-        config = form_to_obj( );
-        set_config( config );
-      } );
-      $('.add_room').click( function ( ) {
-        var r = size( config.room );
-        config.room[ r ] = default_room( 1 + r );
-        set_config( config );
-        $('.content').html( '' );
-        output( obj_to_form( '', config, 'config' ));
-        activity_form( config );
-      } );
-      $('.reset').click( function ( ) {
-        set_config( default_config );
-        $('.content').html( '' );
-        config = get_config( );
-        output( obj_to_form( '', config, 'config' ));
-        activity_form( config );
-      } );
+    };
+    var setConfig = function ( config ) {
+      try {
+        config.date = new Date( );
+        localStorage.setItem( 'config', JSON.stringify( config ));
+      }
+      catch ( e ) {
+        error( e );
+      }
+    };
+    $('#page2').bind( 'pageinit', function ( ) {
+      try {
+        /* var size = function( obj ) {
+          if ( obj.length ) return obj.length;
+	  var len = 0, key;
+	  for ( key in obj ) {
+	    if ( obj.hasOwnProperty( key )) len ++;
+	  }
+	  return len;
+	};
+	var formToObj = function ( ) {
+	  var obj = { };
+	  function add( obj, name, value ) {
+	    var key = name.shift( );
+	    // if ( key && key.match( /^\d+$/ )) {
+	    //  key = parseInt( key );
+	    // }
+	    if ( name.length ) {
+	      if ( obj[key] == null ) {
+		obj[key] = { };
+	      }
+	      add( obj[key], name, value );
+	    }
+	    else {
+	      obj[key] = value;
+	    }
+	  }; 
+	  $('.config').find('input, textarea, select').each( function( ) {
+	    add( obj, $(this).attr('name').split('.'), $(this).val( ));
+	  } );
+	  return obj;
+	};
+	var makeInputName = function ( name, prefix ) {
+	  var c = prefix.slice( 0 ); // take a copy
+	  c.push( name );
+	  return c.join('.').replace( /^\.+/, '' ).replace( /\.{2,}/g, '.' );
+	};
+	var input = function ( name, val, prefix ) {
+	  var inputName = makeInputName( name, prefix );
+	  switch ( name ) {
+	    case 'date':
+	    case 'version':
+	      return '<input type="hidden" name="' + inputName + '" value="' + val + '" />';
+	    case 'type':
+	      return '<div><label for="' + inputName + '">' + name + '</label><select id="' + inputName + '" name="' + inputName + '"><option value="button">button<option><option value="switch"' + ( val === 'switch' ? 'selected="selected"' : '' ) + '>switch</option></select></div>';
+	    default:
+	      return '<div><label for="' + inputName + '">' + name + '</label><input id="' + inputName + '" name="' + inputName + '" value="' + val + '" /></div>';
+	  }
+	};
+	var fieldset = function ( name, obj, prefix ) {
+	  var r = '';
+	  if ( typeof obj === 'object' ) {
+	    var parts = '';
+	    prefix.push( name );
+	    for ( var i in obj ) {
+	      parts += fieldset( i, obj[i], prefix );
+	    }
+	    if ( parts ) {
+	      if ( name ) {
+		parts = '<fieldset><legend>' + name + '</legend>' + parts + '</fieldset>';
+	      }
+	      r += parts;
+	    }
+	  }
+	  else {
+	    r += input( name, obj, prefix );
+	  }
+	  return r; 
+	};
+	var objToForm = function ( name, obj, prefix ) {
+	  output( '<form>' + fieldset( name, obj, [ prefix ] ) + '</form>' );
+	};
+	*/
+	var activityForm = function ( config ) {
+	  $('.activity').html('');
+	  config.room && $.each( config.room, function ( ) {
+	    var room = this.name;
+	    this.device && $.each( this.device, function ( ) {
+	      var $form = $('<form />')
+		.append('<legend>' + room + ' ' + this + '</legend>')
+		// .attr( 'action', ( this.protocol || 'http' ) + '://' + this.ip + '/' + this.pin );
+		.attr( 'action', config.url + '/room/' + room + '/' + this );
+	      var $input;
+	      switch ( this.type ) {
+		case 'button':
+		  $input = $('<button>' + this + '</button>');
+		  $form.append( $input );
+		  $input.button( );
+		  break;
+		default:
+		  $input = $('<select><option value="off">off</option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
+		  $form.append( $input );
+		  $input.slider( ); // covered below?
+	      }
+	      $input.change( function ( ) {
+		$.ajax( {
+		  url: $input.parents('form').attr('action') + '?status=' + $input.val( ) + '&_=' + new Date( ),
+		  type: 'PUT',
+		  success: function ( js ) {
+		    debug( 'receieved: ' + JSON.stringify( js ), '.activity' );
+		  },
+		  error: function ( xhr, status, error ) {
+		    debug( status + ' ' + error, '.activity' );
+		  }
+		} );
+	      } );
+	      $form.find('select').slider( );
+	      $('.activity').append( $form );
+	    } );
+	  } );
+	};
+	alert( 'starting' );
+	if ( typeof localStorage === 'undefined' ) {
+	  alert( 'Doh, no html local storage!' );
+	}
+	else {
+	  alert( 'getting config' );
+	  getConfig( function ( config ) {
+	    setConfig( config );
+	    activityForm( config );
+	  } );
+	}
+      }
+      catch ( e ) {
+        alert( 'caught error; ' + e );
+      }
     } );
   </script>
 </body></html>
