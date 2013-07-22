@@ -27,7 +27,7 @@
     <div data-role="content">
       <div data-role="collapsible">
         <h1>Activity</h1>
-        <div class="activity">
+        <div class="activity" data-role="collapsible-set">
           <p>Buttons will go here to turn devices on and off...</p>
         </div>
       </div>
@@ -82,13 +82,10 @@ catch ( e ) {
 }
       if ( c && c.config ) debug( 'stored config is', c.config );
       if ( config && config.url ) {
-	alert( 'getting ' + config.url );
         $.get( config.url, function ( data ) {
-	  alert( 'got ' + config.url );
           debug( 'config from ' + config.url + ' was ' + JSON.stringify( data ));
           callback( data || config );
         } );
-	alert( 'called get' );
       }
       else {
         callback( c.config || config );
@@ -152,74 +149,56 @@ catch ( e ) {
 	      return '<div><label for="' + inputName + '">' + name + '</label><input id="' + inputName + '" name="' + inputName + '" value="' + val + '" /></div>';
 	  }
 	};
-	var fieldset = function ( name, obj, prefix ) {
-	  var r = '';
-	  if ( typeof obj === 'object' ) {
-	    var parts = '';
-	    prefix.push( name );
-	    for ( var i in obj ) {
-	      parts += fieldset( i, obj[i], prefix );
-	    }
-	    if ( parts ) {
-	      if ( name ) {
-		parts = '<fieldset><legend>' + name + '</legend>' + parts + '</fieldset>';
-	      }
-	      r += parts;
-	    }
-	  }
-	  else {
-	    r += input( name, obj, prefix );
-	  }
-	  return r; 
-	};
-	var objToForm = function ( name, obj, prefix ) {
-	  output( '<form>' + fieldset( name, obj, [ prefix ] ) + '</form>' );
-	};
 	*/
 	var activityForm = function ( config ) {
 	  $('.activity').html('');
 	  config.room && $.each( config.room, function ( ) {
 	    var room = this.name;
+	    var $div = $( '<div><h1>' + room + '</h1></div>' );
 	    this.device && $.each( this.device, function ( ) {
-	      var $form = $('<form />')
-		.append('<legend>' + room + ' ' + this + '</legend>')
-		// .attr( 'action', ( this.protocol || 'http' ) + '://' + this.ip + '/' + this.pin );
-		.attr( 'action', config.url + '/room/' + room + '/' + this );
+	      var $form = $( '<form />' )
+		      .append('<legend><h2>' + this + '</h2></legend>')
+		      // .attr( 'action', ( this.protocol || 'http' ) + '://' + this.ip + '/' + this.pin );
+		      .attr( 'action', config.url + '/room/' + room + '/' + this );
 	      var $input;
 	      switch ( this.type ) {
-		case 'button':
-		  $input = $('<button>' + this + '</button>');
-		  $form.append( $input );
-		  $input.button( );
-		  break;
-		default:
-		  $input = $('<select><option value="off">off</option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
-		  $form.append( $input );
-		  $input.slider( ); // covered below?
+		      case 'button':
+		        $input = $('<button>' + this + '</button>');
+		        $input.button( );
+		        break;
+	        default:
+		        if ( this.substr( 0, 5 ) === 'light' ) { // hmm
+		          $input = $( '<input type="range" value="50" min="0" max="100" />' );
+	          }
+	          else {
+		          $input = $('<select><option value="off">off</option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
+	          }
 	      }
+        $form.append( $input );
 	      $input.change( function ( ) {
-		$.ajax( {
-		  url: $input.parents('form').attr('action') + '?status=' + $input.val( ) + '&_=' + new Date( ),
-		  type: 'PUT',
-		  success: function ( js ) {
-		    debug( 'receieved: ' + JSON.stringify( js ), '.activity' );
-		  },
-		  error: function ( xhr, status, error ) {
-		    debug( status + ' ' + error, '.activity' );
-		  }
-		} );
+		      $.ajax( {
+		        url: $input.parents('form').attr('action') + '?status=' + $input.val( ) + '&_=' + new Date( ),
+		        type: 'PUT',
+		        success: function ( js ) {
+		          debug( 'receieved: ' + JSON.stringify( js ), '.activity' );
+		        },
+		        error: function ( xhr, status, error ) {
+		          debug( status + ' ' + error, '.activity' );
+		        }
+		      } );
 	      } );
-	      $form.find('select').slider( );
-	      $('.activity').append( $form );
+	      $div.append( $form );
 	    } );
+      $div.find('select').slider( );
+      $div.find('input[type=range]').slider( );
+      $div.collapsible( );
+	    $('.activity').append( $div );
 	  } );
 	};
-	alert( 'starting' );
 	if ( typeof localStorage === 'undefined' ) {
 	  alert( 'Doh, no html local storage!' );
 	}
 	else {
-	  alert( 'getting config' );
 	  getConfig( function ( config ) {
 	    setConfig( config );
 	    activityForm( config );
