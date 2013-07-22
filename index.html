@@ -167,21 +167,19 @@ catch ( e ) {
 		        $input.button( );
 		        break;
 	        default:
-		        if ( this.substr( 0, 5 ) === 'light' ) { // hmm
-		          $input = $( '<input type="range" value="50" min="0" max="100" />' );
-	          }
-	          else {
-		          $input = $('<select><option value="off">off</option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
-	          }
+		        // if ( this.substr( 0, 5 ) === 'light' ) { // hmm
+		        //   $input = $( '<input type="range" value="50" min="0" max="100" />' );
+	          // }
+		        $input = $('<select><option value="off">off</option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
 	      }
         $form.append( $input );
 	      $input.change( function ( ) {
 		      $.ajax( {
 		        url: $input.parents('form').attr('action') + '?status=' + $input.val( ) + '&_=' + new Date( ),
 		        type: 'PUT',
-		        success: function ( js ) {
-		          debug( 'receieved: ' + JSON.stringify( js ), '.activity' );
-		        },
+		        // success: function ( js ) {
+		        //   debug( 'receieved: ' + JSON.stringify( js ), '.activity' );
+		        // },
 		        error: function ( xhr, status, error ) {
 		          debug( status + ' ' + error, '.activity' );
 		        }
