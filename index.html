@@ -63,14 +63,20 @@
       };
     };
     var defaultConfig = {
-      url: 'http://ourduino.no-ip.org/config',
+      url: 'http://192.168.1.73',
       version: 0.1,
       date: new Date( ),
       room: [
         defaultRoom( 1 )
       ]
     };
+    var defaultAppConfig = {
+      url: defaultConfig.url,
+      version: defaultConfig.version,
+      date: defaultConfig.date
+    };
     var config = defaultConfig;
+    var appConfig = defaultAppConfig;
     var debug = function ( msg, c ) {
       window.console && console.log( msg );
       output( '<pre>' + ( typeof( msg ) === 'string' ? msg : JSON.stringify( msg )) + '</pre>', c );
@@ -81,29 +87,57 @@
     var output = function ( msg, c ) {
       $( c || '.config' ).append( msg );
     };
+    var url = function ( path, params ) {
+      path = appConfig.url + path;
+      path += '?key=' + appConfig.key;
+      path += '&_=' + new Date( );
+      for ( var key in params ) {
+        if ( params.hasOwnProperty( key )) {
+          path += '&' + key + '=' + params[ key ];
+        }
+      }
+      return path;
+    };
     var getConfig = function ( callback ) {
       var c;
       try {
         c = JSON.parse( localStorage.getItem( 'config' ));
+        if ( c ) {
+          debug( 'stored config is ' + JSON.stringify( c ));
+          config = c;
+        }
+        c = JSON.parse( localStorage.getItem( 'appConfig' ));
+        if ( c ) {
+          debug( 'stored app config is ' + JSON.stringify( c ));
+          appConfig = c;
+        }
+        appConfig.url = appConfig.url || config.url;
+        appConfig.key = appConfig.key || 'foo';
       }
       catch ( e ) {
         debug( 'error getting config from local storage; ' + e );
       }
-      if ( c && c.config ) debug( 'stored config is', c.config );
-      if ( config && config.url ) {
-        $.get( config.url + '?key=foo', function ( data ) {
-          debug( 'config from ' + config.url + ' was ' + JSON.stringify( data ));
-          callback( data || config );
+      if ( appConfig && appConfig.url ) {
+        $.ajax( {
+          url: url( '/config' ),
+          type: 'GET',
+          success: function ( data ) {
+            callback( data || config, appConfig );
+          },
+          error: function ( xhr, status, error ) {
+            debug( status + ' ' + error + ' at least we have the stored config...', '.rooms' );
+          }
         } );
       }
       else {
-        callback( c.config || config );
+        callback( c.config || config, appConfig );
       }
     };
-    var setConfig = function ( config ) {
+    var setConfig = function ( name, config ) {
       try {
         config.date = new Date( );
-        localStorage.setItem( 'config', JSON.stringify( config ));
+        localStorage.setItem( name, JSON.stringify( config ));
+        debug( name + ' is now ' + localStorage.getItem( name ));
       }
       catch ( e ) {
         error( e );
@@ -112,118 +146,134 @@
     $('#page2').bind( 'pageinit', function ( ) {
       try {
         /* 
-	     var formToObj = function ( ) {
-	      var obj = { };
-        function add( obj, name, value ) {
-          var key = name.shift( );
-          // if ( key && key.match( /^\d+$/ )) {
-          //  key = parseInt( key );
-          // }
-          if ( name.length ) {
-            if ( obj[key] == null ) {
-              obj[key] = { };
+	      var formToObj = function ( ) {
+	        var obj = { };
+          function add( obj, name, value ) {
+            var key = name.shift( );
+            // if ( key && key.match( /^\d+$/ )) {
+            //  key = parseInt( key );
+            // }
+            if ( name.length ) {
+              if ( obj[key] == null ) {
+                obj[key] = { };
+              }
+              add( obj[key], name, value );
             }
-            add( obj[key], name, value );
-          }
-          else {
-            obj[key] = value;
-          }
-        }; 
-        $('.config').find('input, textarea, select').each( function( ) {
-          add( obj, $(this).attr('name').split('.'), $(this).val( ));
-        } );
-        return obj;
-      };
-      var makeInputName = function ( name, prefix ) {
-        var c = prefix.slice( 0 ); // take a copy
-        c.push( name );
-        return c.join('.').replace( /^\.+/, '' ).replace( /\.{2,}/g, '.' );
-      };
-      var input = function ( name, val, prefix ) {
-        var inputName = makeInputName( name, prefix );
-        switch ( name ) {
-          case 'date':
-          case 'version':
-            return '<input type="hidden" name="' + inputName + '" value="' + val + '" />';
-          case 'type':
-            return '<div><label for="' + inputName + '">' + name + '</label><select id="' + inputName + '" name="' + inputName + '"><option value="button">button<option><option value="switch"' + ( val === 'switch' ? 'selected="selected"' : '' ) + '>switch</option></select></div>';
-          default:
-            return '<div><label for="' + inputName + '">' + name + '</label><input id="' + inputName + '" name="' + inputName + '" value="' + val + '" /></div>';
-        }
-      };
-      */
-      var activityForm = function ( config ) {
-        $('.sequences').html('');
-        config.sequence && $.each( config.sequence, function ( name, sequence ) {
-          var $input = $('<a>' + name + '</a>')
-            .button( )
-            .click( function ( ) {
-              var url = config.url + '/sequence/' + name;
-              // alert( url );
-              $.ajax( {
-                url: url + '?key=foo&status=' + $input.val( ) + '&_=' + new Date( ),
-                type: 'PUT',
-                error: function ( xhr, status, error ) {
-                  debug( status + ' ' + error, '.rooms' );
-                }
-              } );
-              return false;
-            } );
-          $form = $( '<form />' )
-            .append( $input );
-          $('.sequences')
-            .append( $form )
-            .append( '<p>' + sequence + '</p>' );
-        } );
-        $('.rooms').html('');
-        config.room && $.each( config.room, function ( ) {
-          var room = this.name;
-          var $div = $( '<div><h1>' + room + '</h1></div>' );
-          this.device && $.each( this.device, function ( ) {
-            var $form = $( '<form />' )
-              .append('<legend><h2>' + this + '</h2></legend>')
-              .attr( 'action', config.url + '/room/' + room + '/' + this );
-            var $input;
-            switch ( this.type ) {
-              case 'button':
-                $input = $('<button>' + this + '</button>');
-                $input.button( );
-                break;
-              default:
-                // if ( this.substr( 0, 5 ) === 'light' ) { // hmm
-                //   $input = $( '<input type="range" value="50" min="0" max="100" />' );
-                // }
-                $input = $('<select><option value="off">off</option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
+            else {
+              obj[key] = value;
             }
-            $form.append( $input );
-            $input.change( function ( ) {
-              $.ajax( {
-                url: $input.parents('form').attr('action') + '?key=foo&status=' + $input.val( ) + '&_=' + new Date( ),
-                type: 'PUT',
-                // success: function ( js ) {
-                //   debug( 'receieved: ' + JSON.stringify( js ), '.rooms' );
-                // },
-                error: function ( xhr, status, error ) {
-                  debug( status + ' ' + error, '.rooms' );
-                }
-              } );
-            } );
-            $div.append( $form );
+          }; 
+          $('.config').find('input, textarea, select').each( function( ) {
+            add( obj, $(this).attr('name').split('.'), $(this).val( ));
           } );
-          $div.find('select,input[type="range"]').slider( );
-          $div.collapsible( );
-          $('.rooms').append( $div );
-        } );
-      };
-      if ( typeof localStorage === 'undefined' ) {
-        alert( 'Doh, no html local storage!' );
-      }
-      else {
-        getConfig( function ( config ) {
-          setConfig( config );
-          activityForm( config );
-        } );
-      }
+          return obj;
+        };
+        var makeInputName = function ( name, prefix ) {
+          var c = prefix.slice( 0 ); // take a copy
+          c.push( name );
+          return c.join('.').replace( /^\.+/, '' ).replace( /\.{2,}/g, '.' );
+        };
+        var input = function ( name, val, prefix ) {
+          var inputName = makeInputName( name, prefix );
+          switch ( name ) {
+            case 'date':
+            case 'version':
+              return '<input type="hidden" name="' + inputName + '" value="' + val + '" />';
+            case 'type':
+              return '<div><label for="' + inputName + '">' + name + '</label><select id="' + inputName + '" name="' + inputName + '"><option value="button">button<option><option value="switch"' + ( val === 'switch' ? 'selected="selected"' : '' ) + '>switch</option></select></div>';
+            default:
+              return '<div><label for="' + inputName + '">' + name + '</label><input id="' + inputName + '" name="' + inputName + '" value="' + val + '" /></div>';
+          }
+        };
+        */
+        var activityForm = function ( config ) {
+          $('.sequences').html('');
+          config.sequence && $.each( config.sequence, function ( name, sequence ) {
+            var $input = $('<a>' + name + '</a>')
+              .button( )
+              .click( function ( ) {
+                $.ajax( {
+                  url: url( '/sequence/' + name, { status: $input.val( ) } ),
+                  type: 'PUT',
+                  error: function ( xhr, status, error ) {
+                    debug( status + ' ' + error, '.rooms' );
+                  }
+                } );
+                return false;
+              } );
+            $form = $( '<form />' )
+              .append( $input );
+            $('.sequences')
+              .append( $form )
+              .append( '<p>' + sequence + '</p>' );
+          } );
+          $('.rooms').html('');
+          config.room && $.each( config.room, function ( ) {
+            var room = this.name;
+            var $div = $( '<div><h1>' + room + '</h1></div>' );
+            this.device && $.each( this.device, function ( ) {
+              var $form = $( '<form />' )
+                .append('<legend><h2>' + this + '</h2></legend>')
+                .attr( 'action', room + '/' + this );
+              var $input;
+              switch ( this.type ) {
+                case 'button':
+                  $input = $('<button>' + this + '</button>');
+                  $input.button( );
+                  break;
+                default:
+                  // if ( this.substr( 0, 5 ) === 'light' ) { // hmm
+                  //   $input = $( '<input type="range" value="50" min="0" max="100" />' );
+                  // }
+                  $input = $('<select><option value="off">off</option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
+              }
+              $form.append( $input );
+              $input.change( function ( ) {
+                $.ajax( {
+                  url: url( '/room/' + $input.parents('form').attr('action'), { status: $input.val( ) } ),
+                  type: 'PUT',
+                  // success: function ( data ) {
+                  //   debug( 'receieved: ' + JSON.stringify( data ), '.rooms' );
+                  // },
+                  error: function ( xhr, status, error ) {
+                    debug( status + ' ' + error, '.rooms' );
+                  }
+                } );
+              } );
+              $div.append( $form );
+            } );
+            $div.find('select,input[type="range"]').slider( );
+            $div.collapsible( );
+            $('.rooms').append( $div );
+          } );
+        };
+        var configForm = function ( config ) {
+          $('.config').html('');
+          $form = $( '<form />' );
+          $.each( config, function ( key, value ) {
+            var $input = $('<input />')
+              .textinput( )
+              .attr( 'name', key )
+              .val( value )
+              .change( function ( ) {
+                config[ key ] = this.value;
+                setConfig( 'appConfig', config );
+              } )
+            $form.append( $input );
+          } );
+          $('.config').append( $form );
+        };
+        if ( typeof localStorage === 'undefined' ) {
+          alert( 'Doh, no html local storage!' );
+        }
+        else {
+          getConfig( function ( config, appConfig ) {
+            setConfig( 'config', config );
+            setConfig( 'appConfig', appConfig );
+            activityForm( config );
+            configForm( appConfig );
+          } );
+        }
       }
       catch ( e ) {
         alert( 'caught error; ' + e );
