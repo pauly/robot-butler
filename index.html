@@ -25,17 +25,25 @@
       <h1>Robot Butler</h1>
     </div>
     <div data-role="content">
-      <div data-role="collapsible">
-        <h1>Activity</h1>
-        <div class="activity" data-role="collapsible-set">
-          <p>Buttons will go here to turn devices on and off...</p>
+      <div data-role="collapsible-set">
+        <div data-role="collapsible">
+          <h1>Sequences / shortcuts</h1>
+          <div class="sequences" data-role="collapsible-set">
+            <p>Buttons will go here to execute sequences...</p>
+          </div>
         </div>
-      </div>
-      <div data-role="collapsible">
-        <h1>Config</h1>
-        <div class="config"></div>
-        <!-- <p><a data-role="button" class="add_room">add a room</a></p>
-        <p><a data-role="button" class="reset">reset</a></p> -->
+        <div data-role="collapsible">
+          <h1>Rooms</h1>
+          <div class="rooms" data-role="collapsible-set">
+            <p>Buttons will go here to turn individual devices on and off...</p>
+          </div>
+        </div>
+        <div data-role="collapsible">
+          <h1>Config / registration</h1>
+          <div class="config"></div>
+          <!-- <p><a data-role="button" class="add_room">add a room</a></p>
+          <p><a data-role="button" class="reset">reset</a></p> -->
+        </div>
       </div>
     </div>
     <div data-role="footer">
@@ -77,12 +85,13 @@
       var c;
       try {
         c = JSON.parse( localStorage.getItem( 'config' ));
-}
-catch ( e ) {
-}
+      }
+      catch ( e ) {
+        debug( 'error getting config from local storage; ' + e );
+      }
       if ( c && c.config ) debug( 'stored config is', c.config );
       if ( config && config.url ) {
-        $.get( config.url, function ( data ) {
+        $.get( config.url + '?key=foo', function ( data ) {
           debug( 'config from ' + config.url + ' was ' + JSON.stringify( data ));
           callback( data || config );
         } );
@@ -102,106 +111,119 @@ catch ( e ) {
     };
     $('#page2').bind( 'pageinit', function ( ) {
       try {
-        /* var size = function( obj ) {
-          if ( obj.length ) return obj.length;
-	  var len = 0, key;
-	  for ( key in obj ) {
-	    if ( obj.hasOwnProperty( key )) len ++;
-	  }
-	  return len;
-	};
-	var formToObj = function ( ) {
-	  var obj = { };
-	  function add( obj, name, value ) {
-	    var key = name.shift( );
-	    // if ( key && key.match( /^\d+$/ )) {
-	    //  key = parseInt( key );
-	    // }
-	    if ( name.length ) {
-	      if ( obj[key] == null ) {
-		obj[key] = { };
-	      }
-	      add( obj[key], name, value );
-	    }
-	    else {
-	      obj[key] = value;
-	    }
-	  }; 
-	  $('.config').find('input, textarea, select').each( function( ) {
-	    add( obj, $(this).attr('name').split('.'), $(this).val( ));
-	  } );
-	  return obj;
-	};
-	var makeInputName = function ( name, prefix ) {
-	  var c = prefix.slice( 0 ); // take a copy
-	  c.push( name );
-	  return c.join('.').replace( /^\.+/, '' ).replace( /\.{2,}/g, '.' );
-	};
-	var input = function ( name, val, prefix ) {
-	  var inputName = makeInputName( name, prefix );
-	  switch ( name ) {
-	    case 'date':
-	    case 'version':
-	      return '<input type="hidden" name="' + inputName + '" value="' + val + '" />';
-	    case 'type':
-	      return '<div><label for="' + inputName + '">' + name + '</label><select id="' + inputName + '" name="' + inputName + '"><option value="button">button<option><option value="switch"' + ( val === 'switch' ? 'selected="selected"' : '' ) + '>switch</option></select></div>';
-	    default:
-	      return '<div><label for="' + inputName + '">' + name + '</label><input id="' + inputName + '" name="' + inputName + '" value="' + val + '" /></div>';
-	  }
-	};
-	*/
-	var activityForm = function ( config ) {
-	  $('.activity').html('');
-	  config.room && $.each( config.room, function ( ) {
-	    var room = this.name;
-	    var $div = $( '<div><h1>' + room + '</h1></div>' );
-	    this.device && $.each( this.device, function ( ) {
-	      var $form = $( '<form />' )
-		      .append('<legend><h2>' + this + '</h2></legend>')
-		      // .attr( 'action', ( this.protocol || 'http' ) + '://' + this.ip + '/' + this.pin );
-		      .attr( 'action', config.url + '/room/' + room + '/' + this );
-	      var $input;
-	      switch ( this.type ) {
-		      case 'button':
-		        $input = $('<button>' + this + '</button>');
-		        $input.button( );
-		        break;
-	        default:
-		        // if ( this.substr( 0, 5 ) === 'light' ) { // hmm
-		        //   $input = $( '<input type="range" value="50" min="0" max="100" />' );
-	          // }
-		        $input = $('<select><option value="off">off</option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
-	      }
-        $form.append( $input );
-	      $input.change( function ( ) {
-		      $.ajax( {
-		        url: $input.parents('form').attr('action') + '?status=' + $input.val( ) + '&_=' + new Date( ),
-		        type: 'PUT',
-		        // success: function ( js ) {
-		        //   debug( 'receieved: ' + JSON.stringify( js ), '.activity' );
-		        // },
-		        error: function ( xhr, status, error ) {
-		          debug( status + ' ' + error, '.activity' );
-		        }
-		      } );
-	      } );
-	      $div.append( $form );
-	    } );
-      $div.find('select').slider( );
-      $div.find('input[type=range]').slider( );
-      $div.collapsible( );
-	    $('.activity').append( $div );
-	  } );
-	};
-	if ( typeof localStorage === 'undefined' ) {
-	  alert( 'Doh, no html local storage!' );
-	}
-	else {
-	  getConfig( function ( config ) {
-	    setConfig( config );
-	    activityForm( config );
-	  } );
-	}
+        /* 
+	     var formToObj = function ( ) {
+	      var obj = { };
+        function add( obj, name, value ) {
+          var key = name.shift( );
+          // if ( key && key.match( /^\d+$/ )) {
+          //  key = parseInt( key );
+          // }
+          if ( name.length ) {
+            if ( obj[key] == null ) {
+              obj[key] = { };
+            }
+            add( obj[key], name, value );
+          }
+          else {
+            obj[key] = value;
+          }
+        }; 
+        $('.config').find('input, textarea, select').each( function( ) {
+          add( obj, $(this).attr('name').split('.'), $(this).val( ));
+        } );
+        return obj;
+      };
+      var makeInputName = function ( name, prefix ) {
+        var c = prefix.slice( 0 ); // take a copy
+        c.push( name );
+        return c.join('.').replace( /^\.+/, '' ).replace( /\.{2,}/g, '.' );
+      };
+      var input = function ( name, val, prefix ) {
+        var inputName = makeInputName( name, prefix );
+        switch ( name ) {
+          case 'date':
+          case 'version':
+            return '<input type="hidden" name="' + inputName + '" value="' + val + '" />';
+          case 'type':
+            return '<div><label for="' + inputName + '">' + name + '</label><select id="' + inputName + '" name="' + inputName + '"><option value="button">button<option><option value="switch"' + ( val === 'switch' ? 'selected="selected"' : '' ) + '>switch</option></select></div>';
+          default:
+            return '<div><label for="' + inputName + '">' + name + '</label><input id="' + inputName + '" name="' + inputName + '" value="' + val + '" /></div>';
+        }
+      };
+      */
+      var activityForm = function ( config ) {
+        $('.sequences').html('');
+        config.sequence && $.each( config.sequence, function ( name, sequence ) {
+          var $input = $('<a>' + name + '</a>')
+            .button( )
+            .click( function ( ) {
+              var url = config.url + '/sequence/' + name;
+              // alert( url );
+              $.ajax( {
+                url: url + '?key=foo&status=' + $input.val( ) + '&_=' + new Date( ),
+                type: 'PUT',
+                error: function ( xhr, status, error ) {
+                  debug( status + ' ' + error, '.rooms' );
+                }
+              } );
+              return false;
+            } );
+          $form = $( '<form />' )
+            .append( $input );
+          $('.sequences')
+            .append( $form )
+            .append( '<p>' + sequence + '</p>' );
+        } );
+        $('.rooms').html('');
+        config.room && $.each( config.room, function ( ) {
+          var room = this.name;
+          var $div = $( '<div><h1>' + room + '</h1></div>' );
+          this.device && $.each( this.device, function ( ) {
+            var $form = $( '<form />' )
+              .append('<legend><h2>' + this + '</h2></legend>')
+              .attr( 'action', config.url + '/room/' + room + '/' + this );
+            var $input;
+            switch ( this.type ) {
+              case 'button':
+                $input = $('<button>' + this + '</button>');
+                $input.button( );
+                break;
+              default:
+                // if ( this.substr( 0, 5 ) === 'light' ) { // hmm
+                //   $input = $( '<input type="range" value="50" min="0" max="100" />' );
+                // }
+                $input = $('<select><option value="off">off</option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
+            }
+            $form.append( $input );
+            $input.change( function ( ) {
+              $.ajax( {
+                url: $input.parents('form').attr('action') + '?key=foo&status=' + $input.val( ) + '&_=' + new Date( ),
+                type: 'PUT',
+                // success: function ( js ) {
+                //   debug( 'receieved: ' + JSON.stringify( js ), '.rooms' );
+                // },
+                error: function ( xhr, status, error ) {
+                  debug( status + ' ' + error, '.rooms' );
+                }
+              } );
+            } );
+            $div.append( $form );
+          } );
+          $div.find('select,input[type="range"]').slider( );
+          $div.collapsible( );
+          $('.rooms').append( $div );
+        } );
+      };
+      if ( typeof localStorage === 'undefined' ) {
+        alert( 'Doh, no html local storage!' );
+      }
+      else {
+        getConfig( function ( config ) {
+          setConfig( config );
+          activityForm( config );
+        } );
+      }
       }
       catch ( e ) {
         alert( 'caught error; ' + e );
