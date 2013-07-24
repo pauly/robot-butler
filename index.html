@@ -205,6 +205,7 @@
                 $.ajax( {
                   url: url( '/room/' + $input.parents('form').attr('action'), { status: $input.val( ) } ),
                   type: 'PUT',
+                  timeout: 10000, // sequences might be long
                   // success: function ( data ) {
                   //   debug( 'receieved: ' + JSON.stringify( data ), '.rooms' );
                   // },
@@ -234,6 +235,24 @@
               } )
             $form.append( $input );
           } );
+          var $input = $('<a>register</a>')
+            .button( )
+            .click( function ( ) {
+              $.ajax( {
+                url: url( '/user' ),
+                type: 'POST',
+                error: function ( xhr, status, error ) {
+                  debug( 'registration error; ' + status + ' ' + error, '.rooms' );
+                },
+                success: function ( data ) {
+                  debug( 'registered, got ' + ( data.key || data ));
+                  config.key = data.key;
+                  setConfig( 'app-config', config );
+                }
+              } );
+              return false;
+            } );
+          $form.append( $input );
           $('.config').append( $form );
         };
         if ( typeof localStorage === 'undefined' ) {
