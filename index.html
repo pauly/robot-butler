@@ -79,7 +79,7 @@
     var appConfig = defaultAppConfig;
     var debug = function ( msg, c ) {
       window.console && console.log( msg );
-      output( '<pre>' + ( typeof( msg ) === 'string' ? msg : JSON.stringify( msg )) + '</pre>', c );
+      output( '<p>' + ( typeof( msg ) === 'string' ? msg : JSON.stringify( msg )) + '</p>', c );
     };
     var error = function ( msg ) {
       debug( 'ERROR: ' + msg );
@@ -101,13 +101,15 @@
     var getConfig = function ( callback ) {
       var c;
       try {
-        c = JSON.parse( localStorage.getItem( 'config' ));
+        c = localStorage.getItem( 'config' );
         if ( c ) {
+          c = JSON.parse( c );
           debug( 'stored config is ' + JSON.stringify( c ));
           config = c;
         }
-        c = JSON.parse( localStorage.getItem( 'appConfig' ));
+        c = localStorage.getItem( 'app-config' );
         if ( c ) {
+          c = JSON.parse( c );
           debug( 'stored app config is ' + JSON.stringify( c ));
           appConfig = c;
         }
@@ -140,39 +142,11 @@
         debug( name + ' is now ' + localStorage.getItem( name ));
       }
       catch ( e ) {
-        error( e );
+        error( 'error setting ' + name + '; ' + e );
       }
     };
     $('#page2').bind( 'pageinit', function ( ) {
       try {
-        /* 
-	      var formToObj = function ( ) {
-	        var obj = { };
-          function add( obj, name, value ) {
-            var key = name.shift( );
-            // if ( key && key.match( /^\d+$/ )) {
-            //  key = parseInt( key );
-            // }
-            if ( name.length ) {
-              if ( obj[key] == null ) {
-                obj[key] = { };
-              }
-              add( obj[key], name, value );
-            }
-            else {
-              obj[key] = value;
-            }
-          }; 
-          $('.config').find('input, textarea, select').each( function( ) {
-            add( obj, $(this).attr('name').split('.'), $(this).val( ));
-          } );
-          return obj;
-        };
-        var makeInputName = function ( name, prefix ) {
-          var c = prefix.slice( 0 ); // take a copy
-          c.push( name );
-          return c.join('.').replace( /^\.+/, '' ).replace( /\.{2,}/g, '.' );
-        };
         var input = function ( name, val, prefix ) {
           var inputName = makeInputName( name, prefix );
           switch ( name ) {
@@ -185,7 +159,6 @@
               return '<div><label for="' + inputName + '">' + name + '</label><input id="' + inputName + '" name="' + inputName + '" value="' + val + '" /></div>';
           }
         };
-        */
         var activityForm = function ( config ) {
           $('.sequences').html('');
           config.sequence && $.each( config.sequence, function ( name, sequence ) {
@@ -257,7 +230,7 @@
               .val( value )
               .change( function ( ) {
                 config[ key ] = this.value;
-                setConfig( 'appConfig', config );
+                setConfig( 'app-config', config );
               } )
             $form.append( $input );
           } );
@@ -269,7 +242,7 @@
         else {
           getConfig( function ( config, appConfig ) {
             setConfig( 'config', config );
-            setConfig( 'appConfig', appConfig );
+            setConfig( 'app-config', appConfig );
             activityForm( config );
             configForm( appConfig );
           } );
