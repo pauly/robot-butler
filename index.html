@@ -7,7 +7,7 @@
   <title>Robot Butler</title>
 </head>
 <body>
-  <div data-role="page">
+  <!-- <div data-role="page">
     <div data-role="header">
       <h1>Robot Butler</h1>
     </div>
@@ -19,7 +19,7 @@
     <div data-role="footer">
       <h4>By <a href="http://www.clarkeology.com/blog/">Paul Clarke</a>.</h4>
     </div>
-  </div>
+  </div> -->
   <div data-role="page" id="page2">
     <div data-role="header">
       <h1>Robot Butler</h1>
@@ -45,6 +45,7 @@
           <p><a data-role="button" class="reset">reset</a></p> -->
         </div>
       </div>
+      <p>This is my robot butler app, turn the lights on and off and so on.</p>
     </div>
     <div data-role="footer">
       <h4>By <a href="http://www.clarkeology.com/blog/">Paul Clarke</a>.</h4>
@@ -128,6 +129,8 @@
           },
           error: function ( xhr, status, error ) {
             debug( status + ' ' + error + ' at least we have the stored config...', '.rooms' );
+            debug( appConfig, '.rooms' );
+            debug( 'key was ' + appConfig.key, '.rooms' );
           }
         } );
       }
