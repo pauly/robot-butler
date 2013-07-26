@@ -9,7 +9,7 @@
   <icon src="res/drawable-xhdpi/ic_launcher.png" width="96" height="96" />
   <feature name="http://api.phonegap.com/1.0/network"/>
   <preference name="orientation" value="portrait" />
-  <preference name="phonegap-version" value="2.7.0" />
-  <preference name="splash-screen-duration" value="1000" />
+  <preference name="phonegap-version" value="2.5.0" />
+  <preference name="splash-screen-duration" value="500" />
   <gap:splash src="splash.png" gap:platform="android" width="480" height="640" />
 </widget>

@@ -72,6 +72,7 @@
       ]
     };
     var defaultAppConfig = {
+      id: null,
       url: defaultConfig.url,
       version: defaultConfig.version,
       date: defaultConfig.date
@@ -131,6 +132,7 @@
             debug( status + ' ' + error + ' at least we have the stored config...', '.rooms' );
             debug( appConfig, '.rooms' );
             debug( 'key was ' + appConfig.key, '.rooms' );
+            callback( config, appConfig );
           }
         } );
       }
@@ -248,8 +250,9 @@
                   debug( 'registration error; ' + status + ' ' + error, '.rooms' );
                 },
                 success: function ( data ) {
-                  debug( 'registered, got ' + ( data.key || data ));
+                  debug( 'registered, ask paul to enable ' + ( data.key || data ));
                   config.key = data.key;
+                  $('input[name="key"]').val( data.key );
                   setConfig( 'app-config', config );
                 }
               } );
