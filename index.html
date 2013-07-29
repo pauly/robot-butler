@@ -41,8 +41,7 @@
         <div data-role="collapsible">
           <h1>Config / registration</h1>
           <div class="config"></div>
-          <!-- <p><a data-role="button" class="add_room">add a room</a></p>
-          <p><a data-role="button" class="reset">reset</a></p> -->
+          <p><a href="https://build.phonegap.com/apps/109228/builds">Update app, via phonegap</a>.</p>
         </div>
       </div>
       <p>This is my robot butler app, turn the lights on and off and so on.</p>
@@ -144,7 +143,6 @@
       try {
         config.date = new Date( );
         localStorage.setItem( name, JSON.stringify( config ));
-        debug( name + ' is now ' + localStorage.getItem( name ));
       }
       catch ( e ) {
         error( 'error setting ' + name + '; ' + e );
@@ -173,8 +171,9 @@
                 $.ajax( {
                   url: url( '/sequence/' + name, { status: $input.val( ) } ),
                   type: 'PUT',
+                  timeout: 10000, // sequences might be long
                   error: function ( xhr, status, error ) {
-                    debug( status + ' ' + error, '.rooms' );
+                    alert( status + ' ' + error + ' /sequence/' + name + ' failed' );
                   }
                 } );
                 return false;
@@ -183,7 +182,7 @@
               .append( $input );
             $('.sequences')
               .append( $form )
-              .append( '<p>' + sequence + '</p>' );
+              .append( '<p><small>' + sequence + '</small></p>' );
           } );
           $('.rooms').html('');
           config.room && $.each( config.room, function ( ) {
@@ -193,29 +192,16 @@
               var $form = $( '<form />' )
                 .append('<legend><h2>' + this + '</h2></legend>')
                 .attr( 'action', room + '/' + this );
-              var $input;
-              switch ( this.type ) {
-                case 'button':
-                  $input = $('<button>' + this + '</button>');
-                  $input.button( );
-                  break;
-                default:
-                  // if ( this.substr( 0, 5 ) === 'light' ) { // hmm
-                  //   $input = $( '<input type="range" value="50" min="0" max="100" />' );
-                  // }
-                  $input = $('<select><option value="off">off</option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
-              }
+              var $input = $('<select><option value="off">off</option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
               $form.append( $input );
               $input.change( function ( ) {
+                var name = $input.parents('form').attr('action');
                 $.ajax( {
-                  url: url( '/room/' + $input.parents('form').attr('action'), { status: $input.val( ) } ),
+                  url: url( '/room/' + name, { status: $input.val( ) } ),
                   type: 'PUT',
-                  timeout: 10000, // sequences might be long
-                  // success: function ( data ) {
-                  //   debug( 'receieved: ' + JSON.stringify( data ), '.rooms' );
-                  // },
                   error: function ( xhr, status, error ) {
-                    debug( status + ' ' + error, '.rooms' );
+                    alert( status + ' ' + error );
+                    alert( status + ' ' + error + ' /room/' + name + ' failed' );
                   }
                 } );
               } );
@@ -230,6 +216,8 @@
           $('.config').html('');
           $form = $( '<form />' );
           $.each( config, function ( key, value ) {
+            if ( key == 'version' ) return;
+            if ( key == 'date' ) return;
             var $input = $('<input />')
               .textinput( )
               .attr( 'name', key )
@@ -238,6 +226,7 @@
                 config[ key ] = this.value;
                 setConfig( 'app-config', config );
               } )
+            $form.append( '<label>' + key + '</label>' );
             $form.append( $input );
           } );
           var $input = $('<a>register</a>')
@@ -246,6 +235,7 @@
               $.ajax( {
                 url: url( '/user' ),
                 type: 'POST',
+                // data:I//
                 error: function ( xhr, status, error ) {
                   debug( 'registration error; ' + status + ' ' + error, '.rooms' );
                 },
