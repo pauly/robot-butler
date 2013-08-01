@@ -38,6 +38,12 @@
             <p>Buttons will go here to turn individual devices on and off...</p>
           </div>
         </div>
+        <div class="energy" data-role="collapsible">
+          <h1>Energy</h1>
+          <div>
+            <p>Energy usage will go here...</p>
+          </div>
+        </div>
         <div data-role="collapsible">
           <h1>Config / registration</h1>
           <div class="config"></div>
@@ -150,6 +156,19 @@
     };
     $('#page2').bind( 'pageinit', function ( ) {
       try {
+        $('.energy').bind( 'expand', function ( event, ui ) {
+          var $p = $( 'p', this );
+          $.ajax( {
+            url: url( '/energy' ),
+            type: 'GET',
+            error: function ( xhr, status, error ) {
+              debug( 'energy error; ' + status + ' ' + error, '.energy' );
+            },
+            success: function ( data ) {
+              $p.text( 'usage: ' + data.usage + ', today: ' + data.today );
+            }
+          } );
+        } );
         var input = function ( name, val, prefix ) {
           var inputName = makeInputName( name, prefix );
           switch ( name ) {
@@ -200,7 +219,6 @@
                   url: url( '/room/' + name, { status: $input.val( ) } ),
                   type: 'PUT',
                   error: function ( xhr, status, error ) {
-                    alert( status + ' ' + error );
                     alert( status + ' ' + error + ' /room/' + name + ' failed' );
                   }
                 } );
@@ -235,7 +253,6 @@
               $.ajax( {
                 url: url( '/user' ),
                 type: 'POST',
-                // data:I//
                 error: function ( xhr, status, error ) {
                   debug( 'registration error; ' + status + ' ' + error, '.rooms' );
                 },
