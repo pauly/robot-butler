@@ -2,6 +2,7 @@
 
 /**
  * Mock server for the robot butler
+ * Response format based on older code, safe to ignore this.
  * 
  * @author PC <pauly@clarkeology.com>
  * @date Sun May 27 17:55:35 BST 2012
