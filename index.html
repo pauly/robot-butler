@@ -165,7 +165,12 @@
               debug( 'energy error; ' + status + ' ' + error, '.energy' );
             },
             success: function ( data ) {
-              $p.text( 'usage: ' + data.usage + ', today: ' + data.today );
+              $p.text( 'usage: ' + data.usage + ', today: ' + data.today +', history:' );
+              for ( var key in data.history ) {
+                if ( data.history.hasOwnProperty( key )) {
+                  $p.append( '<br />' + key + ': ' + data.history[ key ].today );
+                }
+              }
             }
           } );
         } );
