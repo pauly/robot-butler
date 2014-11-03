@@ -1,15 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<widget xmlns="http://www.w3.org/ns/widgets" xmlns:gap="http://phonegap.com/ns/1.0" id="com.clarkeology.robot-house" version="0.0.1">
+<?xml version="1.0" encoding="utf-8"?>
+<widget id="com.clarkeology.robot-butler" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
   <name>Robot Butler</name>
   <description>LighwaveRF based home automation fun</description>
   <author href="http://www.clarkeology.com/blog/" email="pauly@clarkeology.com">Paul Clarke</author>
-  <icon src="res/drawable-ldpi/ic_launcher.png" width="36" height="36" />
-  <icon src="res/drawable-mdpi/ic_launcher.png" width="48" height="48" />
-  <icon src="res/drawable-hdpi/ic_launcher.png" width="72" height="72" gap:role="default" />
-  <icon src="res/drawable-xhdpi/ic_launcher.png" width="96" height="96" />
   <feature name="http://api.phonegap.com/1.0/network"/>
   <preference name="orientation" value="portrait" />
   <preference name="phonegap-version" value="2.5.0" />
   <preference name="splash-screen-duration" value="500" />
-  <gap:splash src="splash.png" gap:platform="android" width="480" height="640" />
 </widget>
