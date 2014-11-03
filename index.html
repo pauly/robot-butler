@@ -47,7 +47,6 @@
         <div data-role="collapsible">
           <h1>Config / registration</h1>
           <div class="config"></div>
-          <p><a href="https://build.phonegap.com/apps/109228/builds">Update app, via phonegap</a>.</p>
         </div>
       </div>
       <p>This is my robot butler app, turn the lights on and off and so on.</p>
@@ -70,7 +69,7 @@
     };
     var defaultConfig = {
       url: 'http://192.168.1.73',
-      version: 0.1,
+      version: 0.7,
       date: new Date( ),
       room: [
         defaultRoom( 1 )
@@ -186,6 +185,12 @@
               return '<div><label for="' + inputName + '">' + name + '</label><input id="' + inputName + '" name="' + inputName + '" value="' + val + '" /></div>';
           }
         };
+        var name = function ( obj ) {
+          if (( typeof obj == 'object' ) && ( obj !== null )) {
+            return obj.name || 'unknown';
+          }
+          return obj;
+        };
         var activityForm = function ( config ) {
           $('.sequences').html('');
           config.sequence && $.each( config.sequence, function ( name, sequence ) {
@@ -214,8 +219,8 @@
             var $div = $( '<div><h1>' + room + '</h1></div>' );
             this.device && $.each( this.device, function ( ) {
               var $form = $( '<form />' )
-                .append('<legend><h2>' + this + '</h2></legend>')
-                .attr( 'action', room + '/' + this );
+                .append('<legend><h2>' + name( this ) + '</h2></legend>')
+                .attr( 'action', room + '/' + name( this ));
               var $input = $('<select><option value="off">off</option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
               $form.append( $input );
               $input.change( function ( ) {
@@ -259,7 +264,7 @@
                 url: url( '/user' ),
                 type: 'POST',
                 error: function ( xhr, status, error ) {
-                  debug( 'registration error; ' + status + ' ' + error, '.rooms' );
+                  alert( 'registration error; ' + status + ' ' + error );
                 },
                 success: function ( data ) {
                   debug( 'registered, ask paul to enable ' + ( data.key || data ));
@@ -274,16 +279,14 @@
           $('.config').append( $form );
         };
         if ( typeof localStorage === 'undefined' ) {
-          alert( 'Doh, no html local storage!' );
+          return alert( 'Doh, no html local storage!' );
         }
-        else {
-          getConfig( function ( config, appConfig ) {
-            setConfig( 'config', config );
-            setConfig( 'app-config', appConfig );
-            activityForm( config );
-            configForm( appConfig );
-          } );
-        }
+        getConfig( function ( config, appConfig ) {
+          setConfig( 'config', config );
+          setConfig( 'app-config', appConfig );
+          activityForm( config );
+          configForm( appConfig );
+        } );
       }
       catch ( e ) {
         alert( 'caught error; ' + e );
