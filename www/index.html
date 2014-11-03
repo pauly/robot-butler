@@ -29,24 +29,25 @@
         <div data-role="collapsible">
           <h1>Sequences / shortcuts</h1>
           <div class="sequences" data-role="collapsible-set">
-            <p>Buttons will go here to execute sequences...</p>
+            <p>Buttons go here to execute sequences...</p>
           </div>
         </div>
         <div data-role="collapsible">
           <h1>Rooms</h1>
           <div class="rooms" data-role="collapsible-set">
-            <p>Buttons will go here to turn individual devices on and off...</p>
+            <p>Buttons go here to turn individual devices on and off...</p>
           </div>
         </div>
         <div class="energy" data-role="collapsible">
           <h1>Energy</h1>
           <div>
-            <p>Energy usage will go here...</p>
+            <p>Energy usage goes here...</p>
           </div>
         </div>
         <div data-role="collapsible">
           <h1>Config / registration</h1>
           <div class="config"></div>
+          <p>URL is where your lightwaverf api is hosted...</p>
         </div>
       </div>
       <p>This is my robot butler app, turn the lights on and off and so on.</p>
@@ -57,7 +58,9 @@
   </div>
   <script>
     var defaultDevice = function ( i ) {
-      return 'Device ' + i;
+      return {
+        name: 'Device ' + i
+      }
     };
     var defaultRoom = function ( i ) {
       return {
@@ -83,9 +86,12 @@
     };
     var config = defaultConfig;
     var appConfig = defaultAppConfig;
+    var headers = {
+      accept: 'application/json'
+    };
     var debug = function ( msg, c ) {
       window.console && console.log( msg );
-      output( '<p>' + ( typeof( msg ) === 'string' ? msg : JSON.stringify( msg )) + '</p>', c );
+      output( '<p>' + ( typeof( msg ) === 'string' ? msg : JSON.stringify( msg )) + '</' + 'p>', c );
     };
     var error = function ( msg ) {
       debug( 'ERROR: ' + msg );
@@ -128,6 +134,7 @@
       if ( appConfig && appConfig.url ) {
         $.ajax( {
           url: url( '/config' ),
+          headers: headers,
           type: 'GET',
           success: function ( data ) {
             callback( data || config, appConfig );
@@ -159,6 +166,7 @@
           var $p = $( 'p', this );
           $.ajax( {
             url: url( '/energy' ),
+            headers: headers,
             type: 'GET',
             error: function ( xhr, status, error ) {
               debug( 'energy error; ' + status + ' ' + error, '.energy' );
@@ -180,9 +188,9 @@
             case 'version':
               return '<input type="hidden" name="' + inputName + '" value="' + val + '" />';
             case 'type':
-              return '<div><label for="' + inputName + '">' + name + '</label><select id="' + inputName + '" name="' + inputName + '"><option value="button">button<option><option value="switch"' + ( val === 'switch' ? 'selected="selected"' : '' ) + '>switch</option></select></div>';
+              return '<div><label for="' + inputName + '">' + name + '</' + 'label><select id="' + inputName + '" name="' + inputName + '"><option value="button">button<option><option value="switch"' + ( val === 'switch' ? 'selected="selected"' : '' ) + '>switch</' + 'option></' + 'select></' + 'div>';
             default:
-              return '<div><label for="' + inputName + '">' + name + '</label><input id="' + inputName + '" name="' + inputName + '" value="' + val + '" /></div>';
+              return '<div><label for="' + inputName + '">' + name + '</' + 'label><input id="' + inputName + '" name="' + inputName + '" value="' + val + '" /></' + 'div>';
           }
         };
         var name = function ( obj ) {
@@ -192,13 +200,14 @@
           return obj;
         };
         var activityForm = function ( config ) {
-          $('.sequences').html('');
+          $('.sequences').empty( );
           config.sequence && $.each( config.sequence, function ( name, sequence ) {
-            var $input = $('<a>' + name + '</a>')
+            var $input = $('<a>' + name + '</' + 'a>')
               .button( )
               .click( function ( ) {
                 $.ajax( {
                   url: url( '/sequence/' + name, { status: $input.val( ) } ),
+                  headers: headers,
                   type: 'PUT',
                   timeout: 10000, // sequences might be long
                   error: function ( xhr, status, error ) {
@@ -211,22 +220,23 @@
               .append( $input );
             $('.sequences')
               .append( $form )
-              .append( '<p><small>' + sequence + '</small></p>' );
+              .append( '<p><small>' + sequence + '</' + 'small></' + 'p>' );
           } );
-          $('.rooms').html('');
+          $('.rooms').empty( );
           config.room && $.each( config.room, function ( ) {
             var room = this.name;
-            var $div = $( '<div><h1>' + room + '</h1></div>' );
+            var $div = $( '<div><h1>' + room + '</' + 'h1></' + 'div>' );
             this.device && $.each( this.device, function ( ) {
               var $form = $( '<form />' )
-                .append('<legend><h2>' + name( this ) + '</h2></legend>')
+                .append('<legend><h2>' + name( this ) + '</' + 'h2></' + 'legend>')
                 .attr( 'action', room + '/' + name( this ));
-              var $input = $('<select><option value="off">off</option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</option></select>');
+              var $input = $('<select><option value="off">off</' + 'option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</' + 'option></' + 'select>');
               $form.append( $input );
               $input.change( function ( ) {
                 var name = $input.parents('form').attr('action');
                 $.ajax( {
                   url: url( '/room/' + name, { status: $input.val( ) } ),
+                  headers: headers,
                   type: 'PUT',
                   error: function ( xhr, status, error ) {
                     alert( status + ' ' + error + ' /room/' + name + ' failed' );
@@ -241,27 +251,30 @@
           } );
         };
         var configForm = function ( config ) {
-          $('.config').html('');
+          $('.config').empty( );
           $form = $( '<form />' );
           $.each( config, function ( key, value ) {
             if ( key == 'version' ) return;
             if ( key == 'date' ) return;
+            var attr = { name: key };
+            if ( key == 'url' ) attr.type = 'url';
             var $input = $('<input />')
               .textinput( )
-              .attr( 'name', key )
+              .attr( attr )
               .val( value )
               .change( function ( ) {
                 config[ key ] = this.value;
                 setConfig( 'app-config', config );
               } )
-            $form.append( '<label>' + key + '</label>' );
+            $form.append( '<label>' + key + '</' + 'label>' );
             $form.append( $input );
           } );
-          var $input = $('<a>register</a>')
+          var $input = $('<a>register</' + 'a>')
             .button( )
             .click( function ( ) {
               $.ajax( {
                 url: url( '/user' ),
+                headers: headers,
                 type: 'POST',
                 error: function ( xhr, status, error ) {
                   alert( 'registration error; ' + status + ' ' + error );
