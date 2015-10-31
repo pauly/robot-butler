@@ -7,19 +7,6 @@
   <title>Robot Butler</title>
 </head>
 <body>
-  <!-- <div data-role="page">
-    <div data-role="header">
-      <h1>Robot Butler</h1>
-    </div>
-    <div data-role="content">
-      <p>This is my html5 based robot butler app, turn the lights on and off and so on.</p>
-      <p><a href="#page2"><img src="res/drawable-xhdpi/ic_launcher.png" width="96" height="96" alt="robot butler" /></a></p>
-      <p><a href="#page2">Let's go</a>...</p>
-    </div>
-    <div data-role="footer">
-      <h4>By <a href="http://www.clarkeology.com/blog/">Paul Clarke</a>.</h4>
-    </div>
-  </div> -->
   <div data-role="page" id="page2">
     <div data-role="header">
       <h1>Robot Butler</h1>
@@ -71,7 +58,7 @@
       };
     };
     var defaultConfig = {
-      url: 'http://192.168.1.73',
+      url: location.origin + ':8000',
       version: 0.7,
       date: new Date( ),
       room: [
@@ -111,53 +98,39 @@
       return path;
     };
     var getConfig = function ( callback ) {
-      var c;
-      try {
-        c = localStorage.getItem( 'config' );
-        if ( c ) {
-          c = JSON.parse( c );
-          debug( 'stored config is ' + JSON.stringify( c ));
-          config = c;
+      var config;
+      config = localStorage.getItem( 'app-config' );
+      if ( ! config ) {
+        if ( /config=([^;]*)/.test( document.cookie )) {
+          config = decodeURIComponent( RegExp.$1 );
         }
-        c = localStorage.getItem( 'app-config' );
-        if ( c ) {
-          c = JSON.parse( c );
-          debug( 'stored app config is ' + JSON.stringify( c ));
-          appConfig = c;
+      }
+      if ( config ) {
+        appConfig = JSON.parse( config );
+      }
+      appConfig.url = appConfig.url || config.url;
+      appConfig.key = appConfig.key || 'foo';
+      if ( !( appConfig && appConfig.url )) return;
+      $.ajax( {
+        url: url( '/config' ),
+        headers: headers,
+        type: 'GET',
+        success: function ( data ) {
+          callback( data, appConfig );
+        },
+        error: function ( xhr, status, error ) {
+          callback( null, appConfig );
         }
-        appConfig.url = appConfig.url || config.url;
-        appConfig.key = appConfig.key || 'foo';
-      }
-      catch ( e ) {
-        debug( 'error getting config from local storage; ' + e );
-      }
-      if ( appConfig && appConfig.url ) {
-        $.ajax( {
-          url: url( '/config' ),
-          headers: headers,
-          type: 'GET',
-          success: function ( data ) {
-            callback( data || config, appConfig );
-          },
-          error: function ( xhr, status, error ) {
-            debug( status + ' ' + error + ' at least we have the stored config...', '.rooms' );
-            debug( appConfig, '.rooms' );
-            debug( 'key was ' + appConfig.key, '.rooms' );
-            callback( config, appConfig );
-          }
-        } );
-      }
-      else {
-        callback( c.config || config, appConfig );
-      }
+      } );
     };
     var setConfig = function ( name, config ) {
+      config.date = new Date( );
+      var data = JSON.stringify( config );
       try {
-        config.date = new Date( );
-        localStorage.setItem( name, JSON.stringify( config ));
+        localStorage.setItem( name, data );
       }
       catch ( e ) {
-        error( 'error setting ' + name + '; ' + e );
+        document.cookie = 'config=' + encodeURIComponent( data );
       }
     };
     $('#page2').bind( 'pageinit', function ( ) {
@@ -226,11 +199,11 @@
           config.room && $.each( config.room, function ( ) {
             var room = this.name;
             var $div = $( '<div><h1>' + room + '</' + 'h1></' + 'div>' );
-            this.device && $.each( this.device, function ( ) {
+            this.device && $.each( this.device, function( device ) {
               var $form = $( '<form />' )
                 .append('<legend><h2>' + name( this ) + '</' + 'h2></' + 'legend>')
                 .attr( 'action', room + '/' + name( this ));
-              var $input = $('<select><option value="off">off</' + 'option><option value="on"' + ( this.value ? ' selected' : '' ) + '>on</' + 'option></' + 'select>');
+              var $input = $('<select><option value="off">off</' + 'option><option value="on"' + ( this.state === 'F1' ? ' selected' : '' ) + '>on</' + 'option></' + 'select>');
               $form.append( $input );
               $input.change( function ( ) {
                 var name = $input.parents('form').attr('action');
@@ -291,14 +264,10 @@
           $form.append( $input );
           $('.config').append( $form );
         };
-        if ( typeof localStorage === 'undefined' ) {
-          return alert( 'Doh, no html local storage!' );
-        }
         getConfig( function ( config, appConfig ) {
-          setConfig( 'config', config );
           setConfig( 'app-config', appConfig );
-          activityForm( config );
           configForm( appConfig );
+          activityForm( config );
         } );
       }
       catch ( e ) {
